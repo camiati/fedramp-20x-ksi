@@ -57,7 +57,7 @@ Every pull request runs these checks. None of them use credentials or contact an
 
 | Control | Implementation | Maps to |
 |---|---|---|
-| Change management | All changes go through a branch and pull request with passing checks | CM&#8209;3; SOC 2 CC8.1 |
+| Change management | A ruleset on `main` requires a pull request and a passing `checks` job, and blocks force-pushes and deletion. It applies to the owner too. | CM&#8209;3; SOC 2 CC8.1 |
 | Supply chain | Actions pinned to commit SHAs; upstream data pinned to a commit and SHA-256; 7-day Dependabot cooldown | SR&#8209;3; SOC 2 CC9.2 |
 | Patch management | Dependabot updates for actions and Python dependencies | SI&#8209;2 |
 | Data integrity | The loader refuses data that doesn't match its pinned hash or FedRAMP's schema | SI&#8209;7 |
@@ -66,7 +66,7 @@ Every pull request runs these checks. None of them use credentials or contact an
 ## Known gaps
 
 - **Upstream changes are found by hand.** A scheduled check against FedRAMP/rules is on the roadmap.
-- **Branch protection, secret scanning, and SHA-pinning enforcement are repository settings**, configured in GitHub after the first pull request merges.
+- **Secret scanning and SHA-pinning enforcement aren't confirmed yet.** Both are repository settings in GitHub.
 
 ## Roadmap
 
