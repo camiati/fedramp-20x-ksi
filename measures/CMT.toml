@@ -1,0 +1,137 @@
+# Measures for KSI-CMT (Change Management).
+#
+# Theoretical cloud service: AWS infrastructure deployed by Terraform from a GitHub
+# repository, the same setup as aws-federal-baseline. Target: Class C, which needs at
+# least 2 automated measures per KSI (FRC-CSX-VVK). Field reference: measures/README.md.
+
+# KSI-CMT-LMC: Modifications to the cloud service offering are logged and monitored.
+
+[[measure]]
+id = "CMT-LMC-01"
+ksi = "KSI-CMT-LMC"
+objective = "Every management API call that changes the service is recorded in a tamper-evident log."
+check = "A multi-Region CloudTrail trail is logging in every production account, with log file validation on."
+metric = "Share of production accounts and Regions covered by a compliant trail."
+source = "aws-config"
+cycle = "continuous"
+automated = true
+evidence_type = "Configuration"
+controls = ["au-2", "cm-3", "ca-7.4"]
+
+[[measure]]
+id = "CMT-LMC-02"
+ksi = "KSI-CMT-LMC"
+objective = "The configuration history of every resource is recorded, so any change can be traced."
+check = "AWS Config is recording all supported resource types in every production account and Region, and delivered a snapshot in the last 24 hours."
+metric = "Share of production accounts and Regions with an active recorder; hours since the last snapshot."
+source = "aws-config"
+cycle = "continuous"
+automated = true
+evidence_type = "Configuration"
+controls = ["cm-3", "cm-6", "cm-8.3", "ca-7.4"]
+
+[[measure]]
+id = "CMT-LMC-03"
+ksi = "KSI-CMT-LMC"
+objective = "Every code change to the service is tied to a reviewed, recorded pull request."
+check = "Every commit on the default branch belongs to a merged pull request."
+metric = "Share of default-branch commits in the last 30 days that came from a merged pull request."
+source = "github"
+cycle = "daily"
+automated = true
+evidence_type = "Audit Record"
+controls = ["cm-3", "cm-3.1"]
+
+# KSI-CMT-RMV: Changes are made by redeploying version-controlled resources rather than
+# by modifying them directly, wherever reasonable.
+
+[[measure]]
+id = "CMT-RMV-01"
+ksi = "KSI-CMT-RMV"
+objective = "Deployed infrastructure matches what is in version control."
+check = "A scheduled read-only Terraform plan against production reports no changes."
+metric = "Resources drifted from code; days in the last 30 with zero drift."
+source = "terraform"
+cycle = "daily"
+automated = true
+evidence_type = "Report"
+controls = ["cm-2", "cm-3", "cm-6"]
+
+[[measure]]
+id = "CMT-RMV-02"
+ksi = "KSI-CMT-RMV"
+objective = "Production is changed only through the deployment pipeline, not by hand."
+check = "No CloudTrail write events in production come from a principal other than the deployment pipeline's role, except approved break-glass access."
+metric = "Write events per day from outside the pipeline, and the share with an approved break-glass record."
+source = "aws-cloudtrail"
+cycle = "continuous"
+automated = true
+evidence_type = "Log"
+controls = ["cm-3", "cm-5", "cm-7"]
+
+# KSI-CMT-RVP: The effectiveness of documented change management procedures is
+# persistently reviewed.
+
+[[measure]]
+id = "CMT-RVP-01"
+ksi = "KSI-CMT-RVP"
+objective = "Change management works as intended: changes rarely cause failures."
+check = "Change failure rate: the share of production deployments followed by a rollback or an incident within 7 days."
+metric = "Change failure rate over the last 30 days and the last year."
+source = "github"
+cycle = "weekly"
+automated = true
+evidence_type = "Report"
+controls = ["cm-3", "cm-3.2", "cm-3.4"]
+
+[[measure]]
+id = "CMT-RVP-02"
+ksi = "KSI-CMT-RVP"
+objective = "The enforced settings match the documented change procedure."
+check = "The default branch ruleset requires a pull request and the required status checks, blocks force-pushes and deletion, and has no bypass actors."
+metric = "Days in the last 30 on which every ruleset setting matched the procedure."
+source = "github"
+cycle = "daily"
+automated = true
+evidence_type = "Configuration"
+controls = ["cm-3", "cm-5", "cm-9"]
+
+[[measure]]
+id = "CMT-RVP-03"
+ksi = "KSI-CMT-RVP"
+objective = "People who own change management review whether the procedure is still effective."
+check = "A quarterly review of the change procedure uses RVP-01 and RVP-02 as inputs, and findings are tracked to closure."
+metric = "Days since the last review; open findings and their age."
+source = "attestation"
+cycle = "quarterly"
+automated = false
+manual_reason = "Judging whether a procedure is effective needs human review. Automation supplies the inputs (CMT-RVP-01 and CMT-RVP-02)."
+evidence_type = "Procedure"
+controls = ["cm-3", "cm-9"]
+
+# KSI-CMT-VTD: Persistent testing and validation of changes throughout deployment is
+# automated.
+
+[[measure]]
+id = "CMT-VTD-01"
+ksi = "KSI-CMT-VTD"
+objective = "Every change is tested automatically before it can merge."
+check = "Every pull request merged to the default branch passed all required checks: tests, lint, and an infrastructure security scan."
+metric = "Share of merges in the last 30 days with all required checks passing."
+source = "github"
+cycle = "per-change"
+automated = true
+evidence_type = "Audit Record"
+controls = ["cm-3", "cm-3.2", "cm-4.2"]
+
+[[measure]]
+id = "CMT-VTD-02"
+ksi = "KSI-CMT-VTD"
+objective = "Every deployment is validated in production, and failures roll back automatically."
+check = "The pipeline runs post-deployment health checks after every production deployment and rolls back when they fail."
+metric = "Share of deployments with passing post-deployment checks; rollbacks and their time to recover."
+source = "github"
+cycle = "per-change"
+automated = true
+evidence_type = "Log"
+controls = ["cm-3", "cm-4.2", "si-2"]

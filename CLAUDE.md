@@ -18,6 +18,7 @@ A public portfolio and personal reference project: the FedRAMP 20x Key Security 
 
 - **Upstream data is pinned and unchanged.** Files in `data/` are byte-for-byte copies from FedRAMP/rules at the commit in `data/upstream.json`. To update: copy the new files, update the commit and SHA-256 values, then update the expectations in `tests/test_catalog.py` in the same pull request.
 - **Follow FedRAMP's AGENTS.md** when reading the rules: validate against the schema, use class-specific statements as given, and never invent a missing class variant or a normative force for a KSI.
+- **Measures target Class C.** Every theme in `measures/` needs at least 2 automated measures per KSI (FRC-CSX-VVK), and tests enforce it. Measures describe the theoretical AWS + Terraform + GitHub service, never a real one. Field reference: `measures/README.md`. Update the readiness table in the README when measures change.
 - **Cite IDs.** Refer to indicators by ID (`KSI-CED-RAT`) and controls as FedRAMP writes them (`at-2.2`).
 - **Actions are pinned to full commit SHAs** with the version in a comment: `uses: actions/checkout@<sha> # v7.0.1`.
 - **Python with uv.** Run `uv run ruff check`, `uv run ruff format --check`, and `uv run pytest` before committing.
