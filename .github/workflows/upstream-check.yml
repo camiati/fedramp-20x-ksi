@@ -1,0 +1,71 @@
+# Upstream check for fedramp-20x-ksi
+#
+# Runs weekly and on demand:
+#   1. Compare: hash the pinned files at the latest FedRAMP/rules commit and
+#               compare them with data/upstream.json (read-only token)
+#   2. Report:  if any file changed, open an issue, unless one is already open
+#
+# The report job is the only one that can write issues, and it runs no
+# third-party actions or project code.
+
+name: Upstream check
+
+on:
+  schedule:
+    - cron: "0 13 * * 1" # Mondays 13:00 UTC
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      changed: ${{ steps.compare.outputs.changed }}
+      body: ${{ steps.compare.outputs.body }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+
+      - name: Install (locked)
+        run: uv sync --locked
+
+      - name: Compare pinned files with FedRAMP/rules
+        id: compare
+        run: |
+          uv run python -m fedramp_ksi.upstream issue.md
+          if [ -f issue.md ]; then
+            delimiter="EOF_$(openssl rand -hex 16)"
+            {
+              echo "changed=true"
+              echo "body<<$delimiter"
+              cat issue.md
+              echo "$delimiter"
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+  report:
+    needs: compare
+    if: needs.compare.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Open an issue unless one is already open
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TITLE: FedRAMP/rules changed pinned files
+          BODY: ${{ needs.compare.outputs.body }}
+        run: |
+          open=$(gh issue list --state open --search "in:title \"$TITLE\"" --json number --jq length)
+          if [ "$open" -gt 0 ]; then
+            echo "An issue is already open."
+            exit 0
+          fi
+          printf '%s' "$BODY" | gh issue create --title "$TITLE" --body-file -

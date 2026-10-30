@@ -9,7 +9,11 @@ Companion to [The Grid](https://github.com/camiati/The-Grid), a reference guide 
 | File | Defines |
 |---|---|
 | `src/fedramp_ksi/catalog.py` | Loads the KSI catalog, checks it against its pinned SHA-256 and FedRAMP's JSON schema |
+| `src/fedramp_ksi/upstream.py` | Compares the pinned files with the latest FedRAMP/rules commit and writes an issue body when they differ |
 | `tests/test_catalog.py` | Pins the catalog: themes, indicator IDs, class-specific statements, and fields read |
+| `tests/test_upstream.py` | Tests the upstream comparison with faked downloads, offline |
+| `.github/workflows/checks.yml` | Lint, format, and tests on every pull request |
+| `.github/workflows/upstream-check.yml` | Weekly upstream check that opens an issue when pinned files change |
 | `data/fedramp-consolidated-rules.json` | FedRAMP's machine-readable rules, copied unchanged from [FedRAMP/rules](https://github.com/FedRAMP/rules) |
 | `data/fedramp-consolidated-rules.schema.json` | FedRAMP's JSON schema for the rules, copied unchanged |
 | `data/upstream.json` | The upstream commit and the SHA-256 of each copied file |
@@ -53,6 +57,8 @@ Every pull request runs these checks. None of them use credentials or contact an
 | Lint and format | Ruff | Style issues, likely bugs, unformatted code |
 | Tests | pytest | Catalog drift, altered data files, schema violations |
 
+Separately, every Monday the **Upstream check** workflow hashes the pinned files at the latest [FedRAMP/rules](https://github.com/FedRAMP/rules) commit. If either file changed, it opens an issue with links to the diff, unless one is already open. Changes to other upstream files are ignored. It can also be run from the Actions tab.
+
 ## Repository controls
 
 | Control | Implementation | Maps to |
@@ -60,21 +66,20 @@ Every pull request runs these checks. None of them use credentials or contact an
 | Change management | A ruleset on `main` requires a pull request and a passing `checks` job, and blocks force-pushes and deletion. It applies to the owner too. | CM&#8209;3; SOC 2 CC8.1 |
 | Supply chain | Actions pinned to commit SHAs, with pinning enforced in repository settings; upstream data pinned to a commit and SHA-256; 7-day Dependabot cooldown | SR&#8209;3; SOC 2 CC9.2 |
 | Patch management | Dependabot updates for actions and Python dependencies, and Dependabot alerts for known vulnerabilities | SI&#8209;2, RA&#8209;5 |
-| Data integrity | The loader refuses data that doesn't match its pinned hash or FedRAMP's schema | SI&#8209;7 |
+| Data integrity | The loader refuses data that doesn't match its pinned hash or FedRAMP's schema; a weekly check flags upstream changes | SI&#8209;7, CA&#8209;7 |
 | Secrets | Secret scanning and push protection | IA&#8209;5(7) |
 | AI tooling guardrails | Claude Code permission rules deny the `aws` CLI, Terraform commands that contact AWS, reads of credential files, and force-pushes; commits, pushes, and pull requests require approval | AC&#8209;6, CM&#8209;7 |
 
 ## Known gaps
 
-- **Upstream changes are found by hand.** A scheduled check against FedRAMP/rules is on the roadmap.
+- **Upstream updates are applied by hand, on purpose.** The weekly check finds changes; copying new files and updating the test expectations is a reviewed pull request.
 
 ## Roadmap
 
-1. Scheduled check that flags new FedRAMP/rules commits
-2. Measures for each KSI: what's checked, how often, and the data source
-3. Machine-readable evidence per KSI, built around FedRAMP's five default artifacts
-4. Coverage rollup from aws-federal-baseline's 800-53 annotations
-5. Vanta client built against recorded responses and a local mock server
+1. Measures for each KSI: what's checked, how often, and the data source
+2. Machine-readable evidence per KSI, built around FedRAMP's five default artifacts
+3. Coverage rollup from aws-federal-baseline's 800-53 annotations
+4. Vanta client built against recorded responses and a local mock server
 
 ## License
 
