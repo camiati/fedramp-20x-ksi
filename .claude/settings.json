@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(aws:*)",
+      "Bash(aws *)",
+      "Bash(terraform plan:*)",
+      "Bash(terraform apply:*)",
+      "Bash(terraform destroy:*)",
+      "Bash(terraform import:*)",
+      "Bash(terraform state:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git push --force-with-lease:*)",
+      "Read(~/.aws/**)",
+      "Read(~/.ssh/**)",
+      "Read(**/.env*)"
+    ],
+    "ask": [
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr merge:*)"
+    ]
+  }
+}
