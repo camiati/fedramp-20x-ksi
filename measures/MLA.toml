@@ -1,0 +1,193 @@
+# Measures for KSI-MLA (Monitoring, Logging, and Auditing).
+#
+# Theoretical cloud service: AWS infrastructure deployed by Terraform from a GitHub
+# repository, with logs centralized in a dedicated log archive account and a SIEM.
+# Target: Class C, which needs at least 2 automated measures per KSI (FRC-CSX-VVK).
+# Field reference: measures/README.md.
+
+# KSI-MLA-ALA: A least-privileged, role and attribute-based, and just-in-time access
+# authorization model is used and persistently reviewed for access to log data based on
+# organizationally defined data sensitivity. (Optional for Class B; required for Class C.)
+
+[[measure]]
+id = "MLA-ALA-01"
+ksi = "KSI-MLA-ALA"
+objective = "No one has standing access to log data; only approved roles can read it."
+check = "Log archive bucket policies allow reads only from the SIEM ingestion role and a just-in-time log-reader role scoped by data sensitivity tag, and IAM Access Analyzer reports no other access."
+metric = "Log buckets with access outside the approved roles; days in the last 30 with zero."
+source = "aws-config"
+cycle = "continuous"
+automated = true
+evidence_type = "Configuration"
+controls = ["au-6.7", "au-12.3"]
+
+[[measure]]
+id = "MLA-ALA-02"
+ksi = "KSI-MLA-ALA"
+objective = "Human access to log data is just-in-time, approved, and time-limited."
+check = "Every session in the log-reader role matches an approved, time-boxed access request, and no session lasts longer than 1 hour."
+metric = "Share of log-reader sessions with a matching approval; sessions over the time limit."
+source = "aws-cloudtrail"
+cycle = "continuous"
+automated = true
+evidence_type = "Log"
+controls = ["au-6.7"]
+
+[[measure]]
+id = "MLA-ALA-03"
+ksi = "KSI-MLA-ALA"
+objective = "The log access model still fits how sensitive each kind of log data is."
+check = "A quarterly review of log access roles, sensitivity tiers, and the last quarter of MLA-ALA-01 and MLA-ALA-02 results, with findings tracked to closure."
+metric = "Days since the last review; open findings and their age."
+source = "attestation"
+cycle = "quarterly"
+automated = false
+manual_reason = "Deciding whether access matches data sensitivity needs human judgment. Automation supplies the inputs (MLA-ALA-01 and MLA-ALA-02)."
+evidence_type = "Procedure"
+controls = ["au-6.7"]
+
+# KSI-MLA-EVC: The configuration of machine-based information resources, especially
+# infrastructure as code, is persistently evaluated and tested.
+
+[[measure]]
+id = "MLA-EVC-01"
+ksi = "KSI-MLA-EVC"
+objective = "Infrastructure code is evaluated for security misconfigurations before it can merge."
+check = "Every pull request that changes Terraform passes a Checkov scan, and every skipped check has a documented risk acceptance."
+metric = "Share of infrastructure merges in the last 30 days with a passing scan; skips without a risk acceptance."
+source = "github"
+cycle = "per-change"
+automated = true
+evidence_type = "Audit Record"
+controls = ["cm-2", "cm-6", "ra-3"]
+
+[[measure]]
+id = "MLA-EVC-02"
+ksi = "KSI-MLA-EVC"
+objective = "Deployed resources are continuously evaluated against the security baseline."
+check = "AWS Security Hub runs the NIST SP 800-53 standard in every production account and Region, and failed controls are tracked."
+metric = "Security Hub control pass rate; failed controls by severity and age."
+source = "aws-security-hub"
+cycle = "continuous"
+automated = true
+evidence_type = "Report"
+controls = ["ca-7", "cm-6", "cm-6.1"]
+
+# KSI-MLA-LET: A list of information resources and event types that will be logged,
+# monitored, and audited is maintained and persistently reviewed to ensure these
+# activities occur.
+
+[[measure]]
+id = "MLA-LET-01"
+ksi = "KSI-MLA-LET"
+objective = "The list of what gets logged covers every kind of resource that's deployed."
+check = "A version-controlled logging inventory lists the event types logged for each resource type, and every resource type in the AWS Config inventory has an entry."
+metric = "Deployed resource types missing from the logging inventory."
+source = "aws-config"
+cycle = "daily"
+automated = true
+evidence_type = "Report"
+controls = ["au-2", "au-12"]
+
+[[measure]]
+id = "MLA-LET-02"
+ksi = "KSI-MLA-LET"
+objective = "Every log source on the list is actually delivering events."
+check = "Each source in the logging inventory delivered events to the SIEM within its expected interval."
+metric = "Share of listed sources that delivered in the last 24 hours; the longest gap per source."
+source = "siem"
+cycle = "continuous"
+automated = true
+evidence_type = "Report"
+controls = ["au-2", "au-12", "si-4.4"]
+
+[[measure]]
+id = "MLA-LET-03"
+ksi = "KSI-MLA-LET"
+objective = "The logged event types are still the right ones for the service's risks."
+check = "A quarterly review of the logging inventory against current threats, incidents, and service changes, with findings tracked to closure."
+metric = "Days since the last review; event types added or removed."
+source = "attestation"
+cycle = "quarterly"
+automated = false
+manual_reason = "Choosing which events matter for current risks needs human judgment. Automation confirms the list is complete and delivering (MLA-LET-01 and MLA-LET-02)."
+evidence_type = "Procedure"
+controls = ["au-2"]
+
+# KSI-MLA-OSM: A SIEM or similar system is used and persistently reviewed for
+# centralized, tamper-resistant logging of events, activities, and changes.
+
+[[measure]]
+id = "MLA-OSM-01"
+ksi = "KSI-MLA-OSM"
+objective = "Logs are kept centrally where they can't be changed or deleted early."
+check = "All log buckets are in a dedicated log archive account, with S3 Object Lock in compliance mode and retention that meets the required period."
+metric = "Log buckets outside the archive account or without compliant Object Lock retention."
+source = "aws-config"
+cycle = "continuous"
+automated = true
+evidence_type = "Configuration"
+controls = ["au-4", "au-9", "au-11"]
+
+[[measure]]
+id = "MLA-OSM-02"
+ksi = "KSI-MLA-OSM"
+objective = "The SIEM receives and processes events without losing them."
+check = "SIEM ingestion lag and dropped events stay within limits, and an alert fires when any source stops sending."
+metric = "Median and maximum ingestion lag; dropped events per day; time to detect a silent source."
+source = "siem"
+cycle = "continuous"
+automated = true
+evidence_type = "Report"
+controls = ["au-5", "au-5.1", "si-4.2"]
+
+[[measure]]
+id = "MLA-OSM-03"
+ksi = "KSI-MLA-OSM"
+objective = "Tampering with audit logs would be detected."
+check = "CloudTrail log file integrity validation passes for every trail."
+metric = "Log files failing validation; days since the last full validation."
+source = "aws-cloudtrail"
+cycle = "daily"
+automated = true
+evidence_type = "Report"
+controls = ["au-9"]
+
+# KSI-MLA-RVL: Logs are persistently reviewed and audited.
+
+[[measure]]
+id = "MLA-RVL-01"
+ksi = "KSI-MLA-RVL"
+objective = "Logs are reviewed continuously by detections, and every alert is triaged."
+check = "SIEM detection rules run against all log sources, and every alert is triaged within its severity's time limit."
+metric = "Share of alerts triaged within the limit; median time to triage by severity."
+source = "siem"
+cycle = "continuous"
+automated = true
+evidence_type = "Report"
+controls = ["au-6", "au-6.1", "si-4"]
+
+[[measure]]
+id = "MLA-RVL-02"
+ksi = "KSI-MLA-RVL"
+objective = "Threat detection covers every account and Region, and its findings reach reviewers."
+check = "GuardDuty is enabled in every production account and Region, and its findings flow to Security Hub and the SIEM."
+metric = "Accounts and Regions without GuardDuty; findings not acknowledged within the time limit."
+source = "aws-security-hub"
+cycle = "continuous"
+automated = true
+evidence_type = "Configuration"
+controls = ["au-6", "si-4", "si-4.4"]
+
+[[measure]]
+id = "MLA-RVL-03"
+ksi = "KSI-MLA-RVL"
+objective = "Privileged activity is reviewed by a person, not just by detections."
+check = "A weekly report of privileged and break-glass activity is reviewed and signed off, with anything unexplained escalated."
+metric = "Days since the last sign-off; unexplained activity escalated."
+source = "attestation"
+cycle = "weekly"
+automated = false
+manual_reason = "Deciding whether privileged activity was legitimate needs human context. Automation generates the report from SIEM data."
+evidence_type = "Audit Record"
+controls = ["ac-2.4", "ac-6.9", "au-6"]

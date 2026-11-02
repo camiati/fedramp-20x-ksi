@@ -13,7 +13,7 @@ Every measure describes a theoretical cloud service: AWS infrastructure deployed
 | `objective` | What the measure is for | Default artifact 1 |
 | `check` | Exactly what is checked | Default artifact 1 |
 | `metric` | What's tracked over time | SDR-CSX-KMT metrics |
-| `source` | Where the data comes from: `aws-cloudtrail`, `aws-config`, `aws-security-hub`, `github`, `terraform`, `vanta`, or `attestation` | |
+| `source` | Where the data comes from: `aws-cloudtrail`, `aws-config`, `aws-security-hub`, `github`, `siem`, `terraform`, `vanta`, or `attestation` | |
 | `cycle` | How often it runs: `per-change`, `continuous`, `daily`, `weekly`, `monthly`, `quarterly`, or `annual` | Default artifact 2 |
 | `automated` | `true` or `false` | Default artifact 4; FRC-CSX-VVK counts |
 | `manual_reason` | Required when `automated = false`: why automation isn't needed | Default artifact 4 |

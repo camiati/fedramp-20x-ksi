@@ -39,10 +39,11 @@ def measures(catalog):
     return load_measures(catalog)
 
 
-def test_change_management_measures(measures):
-    cmt = [m for m in measures if m.ksi.startswith("KSI-CMT-")]
-    assert len(cmt) == 10
-    assert sum(not m.automated for m in cmt) == 1
+@pytest.mark.parametrize(("theme", "total", "manual"), [("CMT", 10, 1), ("MLA", 14, 3)])
+def test_measure_counts(measures, theme, total, manual):
+    ours = [m for m in measures if m.ksi.startswith(f"KSI-{theme}-")]
+    assert len(ours) == total
+    assert sum(not m.automated for m in ours) == manual
 
 
 def test_themes_with_measures_meet_the_target_class(catalog, measures):
@@ -52,13 +53,20 @@ def test_themes_with_measures_meet_the_target_class(catalog, measures):
             assert r.short == (), f"{r.theme} is short of Class {TARGET_CLASS.upper()}: {r.short}"
 
 
-def test_readiness_by_class(catalog, measures):
-    cmt = {
+@pytest.mark.parametrize(
+    ("theme", "expected"),
+    [
+        ("CMT", {"b": (4, 4), "c": (4, 4), "d": (0, 4)}),
+        ("MLA", {"b": (5, 5), "c": (5, 5), "d": (0, 5)}),
+    ],
+)
+def test_readiness_by_class(catalog, measures, theme, expected):
+    got = {
         r.service_class: (r.ready, r.total)
         for r in readiness(catalog, measures)
-        if r.theme == "CMT"
+        if r.theme == theme
     }
-    assert cmt == {"b": (4, 4), "c": (4, 4), "d": (0, 4)}
+    assert got == expected
 
 
 def test_themes_without_measures_are_not_ready(catalog, measures):

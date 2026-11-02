@@ -33,6 +33,7 @@ SOURCES = {
     "aws-config",
     "aws-security-hub",
     "github",
+    "siem",
     "terraform",
     "vanta",
     "attestation",
