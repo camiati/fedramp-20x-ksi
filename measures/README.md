@@ -19,8 +19,20 @@ Every measure describes a theoretical cloud service: AWS infrastructure deployed
 | `manual_reason` | Required when `automated = false`: why automation isn't needed | Default artifact 4 |
 | `evidence_type` | One of the SDR schema's evidence types: Log, Report, Screenshot, Configuration, Policy, Procedure, Audit Record | SDR `ksiEvidence` |
 | `controls` | NIST SP 800-53 controls the measure supports; must be a subset of the KSI's controls | |
+| `rules` | Optional: FedRAMP rule IDs the measure implements, e.g. `IEC-CSO-EFR`; each must exist in the catalog | |
+| `decisions` | The design choices the measure makes, one per line, e.g. "A snapshot older than 24 hours counts as a failure"; at least one | |
 
 "Default artifacts" are the five items FedRAMP expects for each KSI (`info.default_artifacts.KSI`, required in the Security Decision Record by SDR-CSX-KSI). Artifacts 3 and 5, verification and validation, come from evidence, which is a later step.
+
+## Requirements vs. decisions
+
+Three fields come from FedRAMP: `ksi`, `rules`, and `controls`. Everything else is a design choice for the theoretical service, and `decisions` states those choices plainly: tools, thresholds, cadences, and scope. A measure with no `rules` proves its KSI but doesn't implement a specific FedRAMP rule.
+
+To list every measure's requirements next to its decisions:
+
+```sh
+uv run python -m fedramp_ksi.measures --decisions
+```
 
 ## Readiness by class
 

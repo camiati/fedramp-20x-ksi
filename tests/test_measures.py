@@ -9,7 +9,9 @@ from fedramp_ksi.measures import (
     AUTOMATED_MINIMUM,
     TARGET_CLASS,
     MeasureError,
+    decisions_report,
     load_measures,
+    main,
     readiness,
 )
 
@@ -25,6 +27,7 @@ cycle = "daily"
 automated = true
 evidence_type = "Report"
 controls = ["at-2"]
+decisions = ["d"]
 """
 MANUAL = 'automated = false\nmanual_reason = "needs a person"'
 
@@ -89,6 +92,33 @@ def test_manual_measures_do_not_count(catalog, write):
 def test_valid_measure_loads(catalog, write):
     (m,) = load_measures(catalog, write(VALID))
     assert m.id == "CED-RAT-01" and m.controls == ("at-2",)
+    assert m.decisions == ("d",) and m.rules == ()
+
+
+def test_rules_name_fedramp_rules(catalog, write):
+    (m,) = load_measures(catalog, write(VALID + 'rules = ["FRC-CSX-VVK"]\n'))
+    assert m.rules == ("FRC-CSX-VVK",)
+
+
+def test_decisions_report(catalog, write):
+    measures = load_measures(catalog, write(VALID + 'rules = ["FRC-CSX-VVK"]\n'))
+    assert decisions_report(measures) == (
+        "CED-RAT-01  KSI-CED-RAT\n"
+        "  FedRAMP rules: FRC-CSX-VVK\n"
+        "  Controls:      at-2\n"
+        "  Decisions:\n"
+        "    - d\n"
+    )
+
+
+def test_every_measure_states_its_decisions(measures):
+    assert all(m.decisions for m in measures)
+    assert "none beyond the KSI" in decisions_report(measures)
+
+
+def test_unknown_option_prints_usage(capsys):
+    assert main(["--bogus"]) == 2
+    assert "usage" in capsys.readouterr().err
 
 
 @pytest.mark.parametrize(
@@ -105,6 +135,13 @@ def test_valid_measure_loads(catalog, write):
         ("automated = true", 'automated = "yes"', "true or false"),
         ('metric = "m"\n', "", "missing metric"),
         ('metric = "m"', 'metric = "m"\nowner = "x"', "unknown fields: owner"),
+        ('decisions = ["d"]\n', "", "missing decisions"),
+        ('decisions = ["d"]', "decisions = []", "at least one decision"),
+        ('decisions = ["d"]', 'decisions = [" "]', "at least one decision"),
+        ('decisions = ["d"]', 'decisions = "d"', "decisions must be a list"),
+        ('decisions = ["d"]', 'decisions = ["d"]\nrules = ["XXX-YYY-ZZZ"]', "unknown FedRAMP"),
+        ('decisions = ["d"]', 'decisions = ["d"]\nrules = ["KSI-CED-RAT"]', "unknown FedRAMP"),
+        ('decisions = ["d"]', 'decisions = ["d"]\nrules = "FRC-CSX-VVK"', "rules must be a list"),
     ],
 )
 def test_invalid_measures_are_rejected(catalog, write, old, new, error):

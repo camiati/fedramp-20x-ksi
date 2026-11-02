@@ -69,6 +69,8 @@ class Catalog:
     source_commit: str
     default_artifacts: tuple[str, ...]
     themes: tuple[Theme, ...]
+    # Every FedRAMP rule ID, such as FRC-CSX-VVK, at JSON path FRR.<family>.data.<type>.<subset>.
+    rule_ids: frozenset[str]
 
     @property
     def indicators(self) -> tuple[Indicator, ...]:
@@ -99,6 +101,13 @@ def load_catalog(data_dir: Path = DATA_DIR) -> Catalog:
         source_commit=upstream["commit"],
         default_artifacts=tuple(rules["info"]["default_artifacts"]["KSI"]),
         themes=themes,
+        rule_ids=frozenset(
+            rule_id
+            for family in rules["FRR"].values()
+            for subsets in family["data"].values()
+            for subset in subsets.values()
+            for rule_id in subset
+        ),
     )
 
 

@@ -8,13 +8,19 @@ automated, which feeds the fourth (SDR-CSX-KSI).
 Readiness follows FRC-CSX-VVK: each KSI needs at least 1 automated method for Class B,
 2 for Class C, and 4 for Class D. Class A has no minimum.
 
-Run as a module to print readiness for every class:
+Each measure keeps what FedRAMP requires apart from what this repo chose. The ksi, rules,
+and controls fields come from FedRAMP; decisions lists the design choices, and every
+measure must state at least one.
+
+Run as a module to print readiness for every class, or every measure's decisions:
 
     python -m fedramp_ksi.measures
+    python -m fedramp_ksi.measures --decisions
 """
 
 from __future__ import annotations
 
+import sys
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
@@ -62,8 +68,10 @@ REQUIRED = (
     "automated",
     "evidence_type",
     "controls",
+    "decisions",
 )
-OPTIONAL = ("manual_reason",)
+OPTIONAL = ("manual_reason", "rules")
+LISTS = ("controls", "decisions", "rules")
 
 
 class MeasureError(Exception):
@@ -82,7 +90,9 @@ class Measure:
     automated: bool
     evidence_type: str
     controls: tuple[str, ...]
+    decisions: tuple[str, ...]
     manual_reason: str | None = None
+    rules: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -128,7 +138,10 @@ def _measure(filename: str, entry: dict) -> Measure:
         raise MeasureError(f"{where} is missing {', '.join(missing)}")
     if unknown:
         raise MeasureError(f"{where} has unknown fields: {', '.join(unknown)}")
-    return Measure(**{**entry, "controls": tuple(entry["controls"])})
+    for field in LISTS:
+        if field in entry and not isinstance(entry[field], list):
+            raise MeasureError(f"{where}: {field} must be a list")
+    return Measure(**{**entry, **{f: tuple(entry[f]) for f in LISTS if f in entry}})
 
 
 def _validate(measures: list[Measure], catalog: Catalog) -> None:
@@ -159,11 +172,36 @@ def _validate(measures: list[Measure], catalog: Catalog) -> None:
                 f"{m.id} controls must be a non-empty subset of {m.ksi}'s controls"
                 + (f"; not mapped: {', '.join(sorted(extra))}" if extra else "")
             )
+        if not m.decisions or not all(isinstance(d, str) and d.strip() for d in m.decisions):
+            raise MeasureError(f"{m.id} needs at least one decision, each a non-empty string")
+        unknown = sorted(set(m.rules) - catalog.rule_ids)
+        if unknown:
+            raise MeasureError(f"{m.id} refers to unknown FedRAMP rules: {', '.join(unknown)}")
 
 
-def main() -> int:
+def decisions_report(measures: tuple[Measure, ...]) -> str:
+    """Every measure's FedRAMP requirements next to the design decisions it makes."""
+    lines = []
+    for m in measures:
+        lines.append(f"{m.id}  {m.ksi}")
+        lines.append(f"  FedRAMP rules: {', '.join(m.rules) or 'none beyond the KSI'}")
+        lines.append(f"  Controls:      {', '.join(m.controls)}")
+        lines.append("  Decisions:")
+        lines.extend(f"    - {d}" for d in m.decisions)
+        lines.append("")
+    return "\n".join(lines)
+
+
+def main(argv: list[str]) -> int:
+    if argv not in ([], ["--decisions"]):
+        print("usage: python -m fedramp_ksi.measures [--decisions]", file=sys.stderr)
+        return 2
     catalog = load_catalog()
-    results = readiness(catalog, load_measures(catalog))
+    measures = load_measures(catalog)
+    if argv:
+        print(decisions_report(measures), end="")
+        return 0
+    results = readiness(catalog, measures)
     print("Theme  Class B  Class C  Class D")
     for theme in catalog.themes:
         row = {r.service_class: r for r in results if r.theme == theme.key}
@@ -173,4 +211,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(main(sys.argv[1:]))

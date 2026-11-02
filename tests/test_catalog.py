@@ -82,6 +82,12 @@ def test_common_statement_applies_to_every_class(catalog):
     assert rat.statement_for("a") == rat.statement_for("d") == rat.statement
 
 
+def test_rule_ids(catalog):
+    assert len(catalog.rule_ids) == 245
+    assert {"FRC-CSX-VVK", "IEC-CSO-EFR", "CDS-CSO-PUB"} <= catalog.rule_ids
+    assert not any(r.startswith("KSI-") for r in catalog.rule_ids)
+
+
 def test_five_default_artifacts(catalog):
     assert len(catalog.default_artifacts) == 5
 
