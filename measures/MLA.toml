@@ -7,7 +7,8 @@
 
 # KSI-MLA-ALA: A least-privileged, role and attribute-based, and just-in-time access
 # authorization model is used and persistently reviewed for access to log data based on
-# organizationally defined data sensitivity. (Optional for Class B; required for Class C.)
+# organizationally defined data sensitivity. (FedRAMP marks this Optional for Class B;
+# this file measures the Class C statement.)
 
 [[measure]]
 id = "MLA-ALA-01"
