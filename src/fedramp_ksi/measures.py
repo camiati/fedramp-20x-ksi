@@ -32,10 +32,11 @@ SOURCES = {
     "aws-cloudtrail",
     "aws-config",
     "aws-security-hub",
+    "compliance-platform",
     "github",
     "siem",
     "terraform",
-    "vanta",
+    "training-platform",
     "attestation",
 }
 CYCLES = {"per-change", "continuous", "daily", "weekly", "monthly", "quarterly", "annual"}

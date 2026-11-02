@@ -4,12 +4,12 @@ Context for Claude Code when working in this repository.
 
 ## What this repo is
 
-A public portfolio and personal reference project: the FedRAMP 20x Key Security Indicators as code. It is **theoretical**. There is no real system, AWS account, or Vanta tenant behind it, and none will be connected.
+A public portfolio and personal reference project: the FedRAMP 20x Key Security Indicators as code. It is **theoretical**. There is no real system, AWS account, or SaaS tenant (such as a compliance or training platform) behind it, and none will be connected.
 
 ## Hard rules
 
 - **No work material.** Never copy employer data, code, configuration, names, account IDs, or tenant details into this repo, including from other folders or repos on this machine.
-- **Never use this machine's cloud or SaaS credentials.** No `aws` CLI commands, no reads of `~/.aws/`, no calls to a real Vanta tenant. These are also blocked in `.claude/settings.json`.
+- **Never use this machine's cloud or SaaS credentials.** No `aws` CLI commands, no reads of `~/.aws/`, no calls to a real SaaS tenant. These are also blocked in `.claude/settings.json`.
 - **Integrations are built against fixtures.** API clients are tested with recorded responses and local mock servers only.
 - **Never commit to `main`.** All changes go through a branch and pull request.
 - **Never put secrets in any file.**

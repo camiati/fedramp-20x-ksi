@@ -11,10 +11,12 @@ Companion to [The Grid](https://github.com/camiati/The-Grid), a reference guide 
 | `src/fedramp_ksi/catalog.py` | Loads the KSI catalog, checks it against its pinned SHA-256 and FedRAMP's JSON schema |
 | `src/fedramp_ksi/upstream.py` | Compares the pinned files with the latest FedRAMP/rules commit and writes an issue body when they differ |
 | `src/fedramp_ksi/measures.py` | Loads measures, checks them against the catalog, and reports readiness for Classes B, C, and D |
+| `src/fedramp_ksi/training.py` | Placeholder client for a training platform's reporting API, and the check for who is overdue on training (KSI&#8209;CED&#8209;RAT) |
 | [`measures/`](./measures/) | Measures for each KSI theme, one TOML file per theme, with a field reference |
 | `tests/test_catalog.py` | Pins the catalog: themes, indicator IDs, class-specific statements, and fields read |
 | `tests/test_upstream.py` | Tests the upstream comparison with faked downloads, offline |
 | `tests/test_measures.py` | Checks measures against the catalog and the Class C target, and tests every validation rule |
+| `tests/test_training.py` | Tests the training client with faked responses and a mock server on 127.0.0.1, and the overdue check |
 | `.github/workflows/checks.yml` | Lint, format, and tests on every pull request |
 | `.github/workflows/upstream-check.yml` | Weekly upstream check that opens an issue when pinned files change |
 | `data/fedramp-consolidated-rules.json` | FedRAMP's machine-readable rules, copied unchanged from [FedRAMP/rules](https://github.com/FedRAMP/rules) |
@@ -59,9 +61,10 @@ FedRAMP sets a minimum number of **automated** measures per KSI by certification
 
 | Theme | Class B | Class C | Class D |
 |---|---|---|---|
+| KSI&#8209;CED | 1/1 | 1/1 | 1/1 |
 | KSI&#8209;CMT | 4/4 | 4/4 | 0/4 |
 | KSI&#8209;MLA | 5/5 | 5/5 | 0/5 |
-| Other 8 themes | 0/37 | 0/37 | 0/37 |
+| Other 7 themes | 0/36 | 0/36 | 0/36 |
 
 ## How changes are checked
 
@@ -88,15 +91,16 @@ Separately, every Monday the **Upstream check** workflow hashes the pinned files
 ## Known gaps
 
 - **Upstream updates are applied by hand, on purpose.** The weekly check finds changes; copying new files and updating the test expectations is a reviewed pull request.
-- **Measures cover 2 of 10 themes.** Change Management and Monitoring, Logging, and Auditing meet the Class C target; the other 37 KSIs have no measures yet.
+- **Measures cover 3 of 10 themes.** Cybersecurity Education, Change Management, and Monitoring, Logging, and Auditing meet the Class C target; the other 36 KSIs have no measures yet.
+- **The training platform API is a placeholder.** `training.py` assumes a generic paged JSON endpoint. Connecting a real platform means mapping its endpoint and field names; the overdue check doesn't change. Who needs each course (identity provider groups, GitHub write access) isn't fetched yet.
 - **FedRAMP's five default artifacts don't map one-to-one to its SDR schema.** SDR&#8209;CSX&#8209;KSI lists five artifacts, but the SDR schema (v1.1.1) has implementation, validation, and assessment statements. The evidence step will document the mapping.
 
 ## Roadmap
 
-1. Measures for the other 8 themes, to Class C
+1. Measures for the other 7 themes, to Class C, starting with the rest of Class A's KSIs (FRC&#8209;CLA&#8209;MFR): INR, IAM, CNA, and SVC
 2. Machine-readable evidence per KSI as a Security Decision Record that validates against FedRAMP's SDR schema
 3. Coverage rollup from aws-federal-baseline's 800-53 annotations
-4. Vanta client built against recorded responses and a local mock server
+4. Compliance platform client built against recorded responses and a local mock server
 
 ## License
 
