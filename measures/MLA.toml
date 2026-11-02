@@ -20,6 +20,11 @@ cycle = "continuous"
 automated = true
 evidence_type = "Configuration"
 controls = ["au-6.7", "au-12.3"]
+decisions = [
+    "Logs are stored in S3 buckets in a dedicated log archive account",
+    "Only the SIEM ingestion role and a just-in-time log-reader role can read logs",
+    "Data sensitivity is set with a tag, and IAM Access Analyzer confirms there is no other access",
+]
 
 [[measure]]
 id = "MLA-ALA-02"
@@ -32,6 +37,10 @@ cycle = "continuous"
 automated = true
 evidence_type = "Log"
 controls = ["au-6.7"]
+decisions = [
+    "Human access to logs needs an approved, time-boxed request",
+    "Sessions are limited to 1 hour",
+]
 
 [[measure]]
 id = "MLA-ALA-03"
@@ -45,6 +54,10 @@ automated = false
 manual_reason = "Deciding whether access matches data sensitivity needs human judgment. Automation supplies the inputs (MLA-ALA-01 and MLA-ALA-02)."
 evidence_type = "Procedure"
 controls = ["au-6.7"]
+decisions = [
+    "The access model is reviewed quarterly",
+    "MLA-ALA-01 and MLA-ALA-02 results are the review's inputs",
+]
 
 # KSI-MLA-EVC: The configuration of machine-based information resources, especially
 # infrastructure as code, is persistently evaluated and tested.
@@ -60,6 +73,10 @@ cycle = "per-change"
 automated = true
 evidence_type = "Audit Record"
 controls = ["cm-2", "cm-6", "ra-3"]
+decisions = [
+    "Checkov scans every pull request that changes Terraform",
+    "A skipped check needs a documented risk acceptance",
+]
 
 [[measure]]
 id = "MLA-EVC-02"
@@ -72,6 +89,10 @@ cycle = "continuous"
 automated = true
 evidence_type = "Report"
 controls = ["ca-7", "cm-6", "cm-6.1"]
+decisions = [
+    "AWS Security Hub's NIST SP 800-53 standard is the security baseline",
+    "It runs in every production account and Region",
+]
 
 # KSI-MLA-LET: A list of information resources and event types that will be logged,
 # monitored, and audited is maintained and persistently reviewed to ensure these
@@ -88,6 +109,10 @@ cycle = "daily"
 automated = true
 evidence_type = "Report"
 controls = ["au-2", "au-12"]
+decisions = [
+    "The logging inventory is a version-controlled list of event types per resource type",
+    "Completeness is checked against the AWS Config resource inventory",
+]
 
 [[measure]]
 id = "MLA-LET-02"
@@ -100,6 +125,10 @@ cycle = "continuous"
 automated = true
 evidence_type = "Report"
 controls = ["au-2", "au-12", "si-4.4"]
+decisions = [
+    "Delivery is measured at the SIEM",
+    "Each source has its own expected delivery interval",
+]
 
 [[measure]]
 id = "MLA-LET-03"
@@ -113,6 +142,9 @@ automated = false
 manual_reason = "Choosing which events matter for current risks needs human judgment. Automation confirms the list is complete and delivering (MLA-LET-01 and MLA-LET-02)."
 evidence_type = "Procedure"
 controls = ["au-2"]
+decisions = [
+    "The inventory is reviewed quarterly against threats, incidents, and service changes",
+]
 
 # KSI-MLA-OSM: A SIEM or similar system is used and persistently reviewed for
 # centralized, tamper-resistant logging of events, activities, and changes.
@@ -128,6 +160,10 @@ cycle = "continuous"
 automated = true
 evidence_type = "Configuration"
 controls = ["au-4", "au-9", "au-11"]
+decisions = [
+    "All log buckets live in a dedicated log archive account",
+    "S3 Object Lock in compliance mode keeps logs from being changed or deleted during retention",
+]
 
 [[measure]]
 id = "MLA-OSM-02"
@@ -140,6 +176,10 @@ cycle = "continuous"
 automated = true
 evidence_type = "Report"
 controls = ["au-5", "au-5.1", "si-4.2"]
+decisions = [
+    "Ingestion lag and dropped events have set limits",
+    "The SIEM alerts when any source stops sending",
+]
 
 [[measure]]
 id = "MLA-OSM-03"
@@ -152,6 +192,10 @@ cycle = "daily"
 automated = true
 evidence_type = "Report"
 controls = ["au-9"]
+decisions = [
+    "CloudTrail log file integrity validation is the tamper check",
+    "Validation runs daily",
+]
 
 # KSI-MLA-RVL: Logs are persistently reviewed and audited.
 
@@ -166,6 +210,10 @@ cycle = "continuous"
 automated = true
 evidence_type = "Report"
 controls = ["au-6", "au-6.1", "si-4"]
+decisions = [
+    "SIEM detection rules are the continuous log review",
+    "Each alert severity has a triage time limit",
+]
 
 [[measure]]
 id = "MLA-RVL-02"
@@ -178,6 +226,10 @@ cycle = "continuous"
 automated = true
 evidence_type = "Configuration"
 controls = ["au-6", "si-4", "si-4.4"]
+decisions = [
+    "GuardDuty provides threat detection in every production account and Region",
+    "Findings flow to Security Hub and the SIEM",
+]
 
 [[measure]]
 id = "MLA-RVL-03"
@@ -191,3 +243,7 @@ automated = false
 manual_reason = "Deciding whether privileged activity was legitimate needs human context. Automation generates the report from SIEM data."
 evidence_type = "Audit Record"
 controls = ["ac-2.4", "ac-6.9", "au-6"]
+decisions = [
+    "Privileged and break-glass activity gets a weekly human review",
+    "Anything unexplained is escalated",
+]

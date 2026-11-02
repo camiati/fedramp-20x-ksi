@@ -8,12 +8,12 @@ Companion to [The Grid](https://github.com/camiati/The-Grid), a reference guide 
 
 | File | Defines |
 |---|---|
-| `src/fedramp_ksi/catalog.py` | Loads the KSI catalog, checks it against its pinned SHA-256 and FedRAMP's JSON schema |
+| `src/fedramp_ksi/catalog.py` | Loads the KSI catalog and FedRAMP's rule IDs, checks them against their pinned SHA-256 and FedRAMP's JSON schema |
 | `src/fedramp_ksi/upstream.py` | Compares the pinned files with the latest FedRAMP/rules commit and writes an issue body when they differ |
-| `src/fedramp_ksi/measures.py` | Loads measures, checks them against the catalog, and reports readiness for Classes B, C, and D |
+| `src/fedramp_ksi/measures.py` | Loads measures, checks them against the catalog, reports readiness for Classes B, C, and D, and lists each measure's design decisions |
 | `src/fedramp_ksi/training.py` | Placeholder client for a training platform's reporting API, and the check for who is overdue on training (KSI&#8209;CED&#8209;RAT) |
 | [`measures/`](./measures/) | Measures for each KSI theme, one TOML file per theme, with a field reference |
-| `tests/test_catalog.py` | Pins the catalog: themes, indicator IDs, class-specific statements, and fields read |
+| `tests/test_catalog.py` | Pins the catalog: themes, indicator IDs, class-specific statements, rule IDs, and fields read |
 | `tests/test_upstream.py` | Tests the upstream comparison with faked downloads, offline |
 | `tests/test_measures.py` | Checks measures against the catalog and the Class C target, and tests every validation rule |
 | `tests/test_training.py` | Tests the training client with faked responses and a mock server on 127.0.0.1, and the overdue check |
@@ -66,6 +66,22 @@ FedRAMP sets a minimum number of **automated** measures per KSI by certification
 | KSI&#8209;MLA | 5/5 | 5/5 | 0/5 |
 | Other 7 themes | 0/36 | 0/36 | 0/36 |
 
+## Requirements vs. design decisions
+
+FedRAMP sets the KSI statements, the rules a measure implements, the 800-53 controls mapped to each KSI, and the minimum number of automated measures per class (FRC&#8209;CSX&#8209;VVK). Everything else here is a design choice for the theoretical service, and is labeled as one.
+
+Decisions that apply to every theme:
+
+- **Infrastructure** is AWS, deployed by Terraform from GitHub, the same setup as aws-federal-baseline.
+- **Changes** go through GitHub pull requests with required checks.
+- **Logs** are centralized in a dedicated log archive account and a SIEM.
+- **People and roles** come from an identity provider's accounts and groups.
+- **Training** is assigned and tracked in a training platform with a read-only reporting API.
+- **Manual reviews** are recorded as attestations and use the automated measures' results as inputs.
+- **The target** is Class C.
+
+Each measure also lists its own decisions in a `decisions` field, such as thresholds and cadences. To see them all with the FedRAMP rules and controls each measure maps to, run `uv run python -m fedramp_ksi.measures --decisions`.
+
 ## How changes are checked
 
 Every pull request runs these checks. None of them use credentials or contact anything besides GitHub and the Python package index.
@@ -92,15 +108,17 @@ Separately, every Monday the **Upstream check** workflow hashes the pinned files
 
 - **Upstream updates are applied by hand, on purpose.** The weekly check finds changes; copying new files and updating the test expectations is a reviewed pull request.
 - **Measures cover 3 of 10 themes.** Cybersecurity Education, Change Management, and Monitoring, Logging, and Auditing meet the Class C target; the other 36 KSIs have no measures yet.
+- **Per-measure decisions are only consolidated by running a command.** The README lists the service-wide decisions, but a reader on GitHub has to open each TOML file, or run `--decisions`, to see the rest. A generated page checked by tests would fix that.
 - **The training platform API is a placeholder.** `training.py` assumes a generic paged JSON endpoint. Connecting a real platform means mapping its endpoint and field names; the overdue check doesn't change. Who needs each course (identity provider groups, GitHub write access) isn't fetched yet.
 - **FedRAMP's five default artifacts don't map one-to-one to its SDR schema.** SDR&#8209;CSX&#8209;KSI lists five artifacts, but the SDR schema (v1.1.1) has implementation, validation, and assessment statements. The evidence step will document the mapping.
 
 ## Roadmap
 
 1. Measures for the other 7 themes, to Class C, starting with the rest of Class A's KSIs (FRC&#8209;CLA&#8209;MFR): INR, IAM, CNA, and SVC
-2. Machine-readable evidence per KSI as a Security Decision Record that validates against FedRAMP's SDR schema
-3. Coverage rollup from aws-federal-baseline's 800-53 annotations
-4. Compliance platform client built against recorded responses and a local mock server
+2. A generated page of every measure's requirements and decisions, kept current by tests
+3. Machine-readable evidence per KSI as a Security Decision Record that validates against FedRAMP's SDR schema
+4. Coverage rollup from aws-federal-baseline's 800-53 annotations
+5. Compliance platform client built against recorded responses and a local mock server
 
 ## License
 

@@ -17,6 +17,10 @@ cycle = "continuous"
 automated = true
 evidence_type = "Configuration"
 controls = ["au-2", "cm-3", "ca-7.4"]
+decisions = [
+    "CloudTrail is the record of management API changes",
+    "One multi-Region trail in every production account, with log file validation on",
+]
 
 [[measure]]
 id = "CMT-LMC-02"
@@ -29,6 +33,10 @@ cycle = "continuous"
 automated = true
 evidence_type = "Configuration"
 controls = ["cm-3", "cm-6", "cm-8.3", "ca-7.4"]
+decisions = [
+    "AWS Config records configuration history for all supported resource types",
+    "A snapshot older than 24 hours counts as a failure",
+]
 
 [[measure]]
 id = "CMT-LMC-03"
@@ -41,6 +49,10 @@ cycle = "daily"
 automated = true
 evidence_type = "Audit Record"
 controls = ["cm-3", "cm-3.1"]
+decisions = [
+    "Code changes are recorded as GitHub pull requests",
+    "Measured over a rolling 30 days",
+]
 
 # KSI-CMT-RMV: Changes are made by redeploying version-controlled resources rather than
 # by modifying them directly, wherever reasonable.
@@ -56,6 +68,10 @@ cycle = "daily"
 automated = true
 evidence_type = "Report"
 controls = ["cm-2", "cm-3", "cm-6"]
+decisions = [
+    "Drift is detected by a scheduled read-only Terraform plan",
+    "The plan runs daily against production",
+]
 
 [[measure]]
 id = "CMT-RMV-02"
@@ -68,6 +84,10 @@ cycle = "continuous"
 automated = true
 evidence_type = "Log"
 controls = ["cm-3", "cm-5", "cm-7"]
+decisions = [
+    "Only the deployment pipeline's role writes to production",
+    "Approved break-glass access is the one exception",
+]
 
 # KSI-CMT-RVP: The effectiveness of documented change management procedures is
 # persistently reviewed.
@@ -83,6 +103,10 @@ cycle = "weekly"
 automated = true
 evidence_type = "Report"
 controls = ["cm-3", "cm-3.2", "cm-3.4"]
+decisions = [
+    "Change failure rate is the effectiveness metric",
+    "A rollback or an incident within 7 days of a deployment counts as a failure",
+]
 
 [[measure]]
 id = "CMT-RVP-02"
@@ -95,6 +119,10 @@ cycle = "daily"
 automated = true
 evidence_type = "Configuration"
 controls = ["cm-3", "cm-5", "cm-9"]
+decisions = [
+    "A GitHub ruleset on the default branch enforces the change procedure",
+    "The ruleset has no bypass actors",
+]
 
 [[measure]]
 id = "CMT-RVP-03"
@@ -108,6 +136,10 @@ automated = false
 manual_reason = "Judging whether a procedure is effective needs human review. Automation supplies the inputs (CMT-RVP-01 and CMT-RVP-02)."
 evidence_type = "Procedure"
 controls = ["cm-3", "cm-9"]
+decisions = [
+    "The procedure is reviewed quarterly",
+    "CMT-RVP-01 and CMT-RVP-02 results are the review's inputs",
+]
 
 # KSI-CMT-VTD: Persistent testing and validation of changes throughout deployment is
 # automated.
@@ -123,6 +155,10 @@ cycle = "per-change"
 automated = true
 evidence_type = "Audit Record"
 controls = ["cm-3", "cm-3.2", "cm-4.2"]
+decisions = [
+    "Required checks are tests, lint, and an infrastructure security scan",
+    "Checks gate merging, not just deployment",
+]
 
 [[measure]]
 id = "CMT-VTD-02"
@@ -135,3 +171,7 @@ cycle = "per-change"
 automated = true
 evidence_type = "Log"
 controls = ["cm-3", "cm-4.2", "si-2"]
+decisions = [
+    "Health checks run after every production deployment",
+    "A failed health check rolls back automatically",
+]

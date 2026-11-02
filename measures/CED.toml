@@ -24,6 +24,11 @@ cycle = "daily"
 automated = true
 evidence_type = "Report"
 controls = ["at-2", "at-2.2", "at-2.3", "at-4"]
+decisions = [
+    "Who needs training comes from active workforce accounts in the identity provider",
+    "Training is current for 365 days, and new staff have 30 days to finish",
+    "One awareness course covers insider threat and social engineering",
+]
 
 [[measure]]
 id = "CED-RAT-02"
@@ -36,6 +41,10 @@ cycle = "daily"
 automated = true
 evidence_type = "Report"
 controls = ["at-3", "at-4"]
+decisions = [
+    "High risk roles are members of production administrator groups in the identity provider",
+    "Role-based training is current for 365 days",
+]
 
 [[measure]]
 id = "CED-RAT-03"
@@ -48,6 +57,10 @@ cycle = "daily"
 automated = true
 evidence_type = "Report"
 controls = ["at-3", "at-4"]
+decisions = [
+    "Development staff are accounts with write access to the service's GitHub repositories",
+    "Secure development training is current for 365 days",
+]
 
 [[measure]]
 id = "CED-RAT-04"
@@ -60,6 +73,11 @@ cycle = "daily"
 automated = true
 evidence_type = "Report"
 controls = ["ir-2", "ir-2.3", "ir-9.2", "cp-3", "at-4"]
+decisions = [
+    "Incident response and recovery staff are members of those groups in the identity provider",
+    "One course covers response, recovery, breaches, and information spills",
+    "Training is current for 365 days",
+]
 
 [[measure]]
 id = "CED-RAT-05"
@@ -73,3 +91,7 @@ automated = false
 manual_reason = "Judging whether training works takes a person; the inputs come from the automated measures and the training platform's reports."
 evidence_type = "Report"
 controls = ["at-2", "at-3", "ir-2", "cp-3"]
+decisions = [
+    "The security lead reviews training effectiveness quarterly",
+    "Inputs are completion rates, phishing simulation results, and incidents caused by human error",
+]
