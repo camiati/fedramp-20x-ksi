@@ -40,6 +40,7 @@ SOURCES = {
     "aws-security-hub",
     "compliance-platform",
     "github",
+    "identity-provider",
     "siem",
     "terraform",
     "training-platform",
