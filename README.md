@@ -60,7 +60,8 @@ FedRAMP sets a minimum number of **automated** measures per KSI by certification
 | Theme | Class B | Class C | Class D |
 |---|---|---|---|
 | KSI&#8209;CMT | 4/4 | 4/4 | 0/4 |
-| Other 9 themes | 0/42 | 0/42 | 0/42 |
+| KSI&#8209;MLA | 5/5 | 5/5 | 0/5 |
+| Other 8 themes | 0/37 | 0/37 | 0/37 |
 
 ## How changes are checked
 
@@ -87,12 +88,12 @@ Separately, every Monday the **Upstream check** workflow hashes the pinned files
 ## Known gaps
 
 - **Upstream updates are applied by hand, on purpose.** The weekly check finds changes; copying new files and updating the test expectations is a reviewed pull request.
-- **Measures cover 1 of 10 themes.** Change Management meets the Class C target; the other 42 KSIs have no measures yet.
+- **Measures cover 2 of 10 themes.** Change Management and Monitoring, Logging, and Auditing meet the Class C target; the other 37 KSIs have no measures yet.
 - **FedRAMP's five default artifacts don't map one-to-one to its SDR schema.** SDR&#8209;CSX&#8209;KSI lists five artifacts, but the SDR schema (v1.1.1) has implementation, validation, and assessment statements. The evidence step will document the mapping.
 
 ## Roadmap
 
-1. Measures for the other 9 themes, to Class C
+1. Measures for the other 8 themes, to Class C
 2. Machine-readable evidence per KSI as a Security Decision Record that validates against FedRAMP's SDR schema
 3. Coverage rollup from aws-federal-baseline's 800-53 annotations
 4. Vanta client built against recorded responses and a local mock server
