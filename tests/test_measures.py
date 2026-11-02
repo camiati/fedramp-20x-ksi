@@ -44,7 +44,7 @@ def measures(catalog):
 
 @pytest.mark.parametrize(
     ("theme", "total", "manual"),
-    [("CED", 5, 1), ("CMT", 10, 1), ("INR", 11, 2), ("MLA", 14, 3)],
+    [("CED", 5, 1), ("CMT", 10, 1), ("IAM", 18, 2), ("INR", 11, 2), ("MLA", 14, 3)],
 )
 def test_measure_counts(measures, theme, total, manual):
     ours = [m for m in measures if m.ksi.startswith(f"KSI-{theme}-")]
@@ -64,6 +64,7 @@ def test_themes_with_measures_meet_the_target_class(catalog, measures):
     [
         ("CED", {"b": (1, 1), "c": (1, 1), "d": (1, 1)}),
         ("CMT", {"b": (4, 4), "c": (4, 4), "d": (0, 4)}),
+        ("IAM", {"b": (6, 6), "c": (6, 6), "d": (0, 6)}),
         ("INR", {"b": (3, 3), "c": (3, 3), "d": (0, 3)}),
         ("MLA", {"b": (5, 5), "c": (5, 5), "d": (0, 5)}),
     ],

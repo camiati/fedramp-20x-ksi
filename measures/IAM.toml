@@ -1,0 +1,322 @@
+# Measures for KSI-IAM (Identity and Access Management).
+#
+# Theoretical cloud service: AWS infrastructure deployed by Terraform from a GitHub
+# repository. Staff sign in through the identity provider, which grants AWS access
+# through IAM Identity Center. Customers sign in to the service through SAML or OIDC
+# federation with their own identity provider, or with passkeys for local accounts.
+# Shared responsibility: these measures check what the service provides and enforces.
+# How customers configure their own identity providers is theirs, and isn't measured.
+# Target: Class C, which needs at least 2 automated measures per KSI (FRC-CSX-VVK).
+# Field reference: measures/README.md.
+
+# KSI-IAM-AAM: The lifecycle and privileges of all accounts, roles, and groups are
+# securely managed using automation.
+
+[[measure]]
+id = "IAM-AAM-01"
+ksi = "KSI-IAM-AAM"
+objective = "Staff accounts exist only while the person works here."
+check = "Every active workforce account in the identity provider matches an active HR record, and accounts are disabled within 1 hour of a termination record."
+metric = "Active accounts with no active HR record; median and maximum time from termination to disable."
+source = "identity-provider"
+cycle = "daily"
+automated = true
+evidence_type = "Report"
+controls = ["ac-2.3", "ia-4.4"]
+decisions = [
+    "The HR system is the source of truth, and provisions and deprovisions accounts in the identity provider through SCIM",
+    "Accounts are disabled within 1 hour of a termination record",
+]
+
+[[measure]]
+id = "IAM-AAM-02"
+ksi = "KSI-IAM-AAM"
+objective = "Who can do what in AWS is defined in code and changed only through review."
+check = "Every IAM Identity Center permission set and assignment in production matches its Terraform definition, and no IAM users exist for people."
+metric = "Permission sets or assignments that differ from code; IAM users for people."
+source = "aws-config"
+cycle = "continuous"
+automated = true
+evidence_type = "Configuration"
+controls = ["ac-6.7"]
+decisions = [
+    "AWS access for people is granted only through IAM Identity Center permission sets",
+    "Permission sets and group assignments are defined in Terraform and changed by pull request",
+]
+
+[[measure]]
+id = "IAM-AAM-03"
+ksi = "KSI-IAM-AAM"
+objective = "Temporary, emergency, and unused accounts don't linger."
+check = "Temporary accounts expire automatically within 30 days, break-glass accounts are disabled outside an approved use, and accounts inactive for 90 days are disabled automatically."
+metric = "Temporary accounts past expiry; enabled break-glass accounts without an approved use; inactive accounts still enabled."
+source = "identity-provider"
+cycle = "daily"
+automated = true
+evidence_type = "Report"
+controls = ["ac-2.2", "ac-2.3"]
+decisions = [
+    "Temporary accounts last at most 30 days",
+    "Break-glass accounts stay disabled until an approved use",
+    "Accounts inactive for 90 days are disabled",
+]
+
+# KSI-IAM-APM: Secure passwordless methods are used for user authentication and
+# authorization when feasible, otherwise strong passwords with phishing-resistant MFA is
+# used.
+
+[[measure]]
+id = "IAM-APM-01"
+ksi = "KSI-IAM-APM"
+objective = "Staff sign in without passwords, using phishing-resistant methods."
+check = "The identity provider's sign-in policy allows only FIDO2 passkeys, security keys, or PIV cards for workforce accounts, and every workforce sign-in in the last 24 hours used one."
+metric = "Workforce sign-ins with any other method; accounts without a registered phishing-resistant authenticator."
+source = "identity-provider"
+cycle = "continuous"
+automated = true
+evidence_type = "Configuration"
+controls = ["ia-2", "ia-2.1", "ia-2.2", "ia-2.8", "ia-5"]
+decisions = [
+    "Workforce accounts have no passwords: FIDO2 passkeys, security keys, or PIV cards only",
+    "Passwordless is treated as feasible for all staff, so there is no password fallback",
+]
+
+[[measure]]
+id = "IAM-APM-02"
+ksi = "KSI-IAM-APM"
+objective = "Every human sign-in to AWS goes through the identity provider."
+check = "Every AWS console and CLI sign-in by a person comes through IAM Identity Center, and any root user sign-in raises an alert."
+metric = "Human sign-ins outside IAM Identity Center; root sign-ins and whether each was approved."
+source = "aws-cloudtrail"
+cycle = "continuous"
+automated = true
+evidence_type = "Log"
+controls = ["ac-2", "ia-2", "ia-2.1"]
+decisions = [
+    "IAM Identity Center is the only way people sign in to AWS",
+    "Root users are for approved emergencies only, with hardware MFA",
+]
+
+[[measure]]
+id = "IAM-APM-03"
+ksi = "KSI-IAM-APM"
+objective = "Customers can sign in securely, and their administrators start with secure defaults."
+check = "Tests on every change confirm the customer sign-in supports SAML and OIDC federation and passkeys, that new customer administrator accounts require phishing-resistant MFA by default, and that the Secure Configuration Guide documents each of these settings."
+metric = "Changes merged with any of these tests failing; settings missing from the Secure Configuration Guide."
+source = "github"
+cycle = "per-change"
+automated = true
+evidence_type = "Audit Record"
+controls = ["ia-5", "ia-8", "ia-8.2"]
+rules = ["SCG-CSO-RSC", "SCG-CSO-SDF"]
+decisions = [
+    "Customers federate from their own identity provider through SAML or OIDC, or use passkeys for local accounts",
+    "Phishing-resistant MFA is on by default for new customer administrator accounts",
+    "How customers configure their own identity providers is their responsibility, and isn't measured",
+]
+
+# KSI-IAM-ELP: Identity and access management measures are used and persistently
+# reviewed to ensure each user or device can only access the resources they need.
+
+[[measure]]
+id = "IAM-ELP-01"
+ksi = "KSI-IAM-ELP"
+objective = "Nobody keeps permissions they don't use."
+check = "IAM Access Analyzer reports no permission set or role with permissions unused for 90 days, unless an exception is recorded."
+metric = "Unused-access findings by age; findings with an exception."
+source = "aws-security-hub"
+cycle = "continuous"
+automated = true
+evidence_type = "Report"
+controls = ["ac-3", "ac-6"]
+decisions = [
+    "IAM Access Analyzer's unused-access findings define unneeded permissions",
+    "Permissions unused for 90 days must be removed or excepted",
+]
+
+[[measure]]
+id = "IAM-ELP-02"
+ksi = "KSI-IAM-ELP"
+objective = "Resources aren't shared outside the organization by accident."
+check = "IAM Access Analyzer reports no resource shared outside the AWS organization unless it's on the approved list, and S3 Block Public Access is on in every account."
+metric = "Unapproved external-access findings; accounts without Block Public Access."
+source = "aws-config"
+cycle = "continuous"
+automated = true
+evidence_type = "Configuration"
+controls = ["ac-3", "ac-4"]
+decisions = [
+    "External sharing is allowed only from an approved list kept in code",
+    "S3 Block Public Access is on at the account level everywhere",
+]
+
+[[measure]]
+id = "IAM-ELP-03"
+ksi = "KSI-IAM-ELP"
+objective = "Production is reached only from managed, healthy devices."
+check = "The identity provider allows sign-in to production applications only from managed devices that pass its posture checks."
+metric = "Production sign-ins from unmanaged or noncompliant devices; devices failing posture checks."
+source = "identity-provider"
+cycle = "continuous"
+automated = true
+evidence_type = "Configuration"
+controls = ["ia-3", "ac-17"]
+decisions = [
+    "Device posture is checked by the identity provider at sign-in",
+    "Only company-managed devices can reach production",
+]
+
+[[measure]]
+id = "IAM-ELP-04"
+ksi = "KSI-IAM-ELP"
+objective = "Owners confirm that access still matches what each person needs."
+check = "Each quarter, group and permission set owners review membership and permissions, using IAM-ELP-01 to 03 results as inputs, and removals are made within 7 days."
+metric = "Days since the last review; removals not made within 7 days."
+source = "attestation"
+cycle = "quarterly"
+automated = false
+manual_reason = "Whether someone still needs access depends on their job, which only their manager or the resource owner knows. Automation supplies the inputs (IAM-ELP-01 to 03)."
+evidence_type = "Procedure"
+controls = ["ac-6", "ac-2.7"]
+decisions = [
+    "Access is reviewed quarterly by the owner of each group and permission set",
+    "Removals from a review are due within 7 days",
+]
+
+# KSI-IAM-JIT: A least-privileged, role and attribute-based, and just-in-time security
+# authorization model is used and persistently reviewed for all user and non-user
+# accounts and services.
+
+[[measure]]
+id = "IAM-JIT-01"
+ksi = "KSI-IAM-JIT"
+objective = "Nobody has standing administrative access to production."
+check = "Production administrator permission sets are assigned only through approved, time-boxed access requests of at most 4 hours, and every session matches an approval."
+metric = "Standing production administrator assignments; sessions without a matching approval; median request duration."
+source = "aws-cloudtrail"
+cycle = "continuous"
+automated = true
+evidence_type = "Log"
+controls = ["ac-2.6", "ac-6", "ac-6.5", "ac-6.9"]
+decisions = [
+    "Production administrator access is requested, approved by a second person, and expires automatically",
+    "Access lasts at most 4 hours per request",
+]
+
+[[measure]]
+id = "IAM-JIT-02"
+ksi = "KSI-IAM-JIT"
+objective = "Workloads get only the access their own service needs."
+check = "Every workload IAM role is scoped to one service, uses tag conditions to limit which resources it can reach, and has no administrator or wildcard-action policies."
+metric = "Workload roles with administrator or wildcard-action policies; roles without tag conditions."
+source = "aws-config"
+cycle = "continuous"
+automated = true
+evidence_type = "Configuration"
+controls = ["ac-3", "ac-6"]
+decisions = [
+    "Each workload has its own IAM role",
+    "Attribute-based access uses resource tags in policy conditions",
+]
+
+[[measure]]
+id = "IAM-JIT-03"
+ksi = "KSI-IAM-JIT"
+objective = "The access model still fits how the service is built and run."
+check = "Each quarter, the security lead reviews the just-in-time roles, approval rules, and maximum durations, using IAM-JIT-01 and 02 results as inputs, and records changes."
+metric = "Days since the last review; changes made per review."
+source = "attestation"
+cycle = "quarterly"
+automated = false
+manual_reason = "Deciding whether roles and durations fit how people actually work needs human judgment. Automation supplies the inputs (IAM-JIT-01 and IAM-JIT-02)."
+evidence_type = "Procedure"
+controls = ["ac-2", "ac-6"]
+decisions = [
+    "The security lead reviews the access model quarterly",
+]
+
+# KSI-IAM-SNU: Appropriately secure authentication methods are used and persistently
+# reviewed for non-user accounts and services.
+
+[[measure]]
+id = "IAM-SNU-01"
+ksi = "KSI-IAM-SNU"
+objective = "Workloads never use long-lived AWS credentials."
+check = "No IAM user access keys exist in production accounts; workloads authenticate with IAM roles and temporary credentials."
+metric = "Active IAM access keys in production, and their age."
+source = "aws-config"
+cycle = "continuous"
+automated = true
+evidence_type = "Configuration"
+controls = ["ac-2", "ia-3"]
+decisions = [
+    "No IAM access keys in production, without exception",
+]
+
+[[measure]]
+id = "IAM-SNU-02"
+ksi = "KSI-IAM-SNU"
+objective = "The deployment pipeline authenticates without stored secrets."
+check = "GitHub Actions reaches AWS only through OIDC federation, each deployment role trusts only its own repository and protected branch, and no AWS credentials are stored as GitHub secrets."
+metric = "Deployment roles with a broader trust policy; AWS credentials found in GitHub secrets."
+source = "github"
+cycle = "daily"
+automated = true
+evidence_type = "Configuration"
+controls = ["ac-2", "ia-3", "ac-6.5"]
+decisions = [
+    "CI/CD uses GitHub's OIDC provider instead of stored keys",
+    "Each deployment role's trust policy is limited to one repository and its protected branch",
+]
+
+[[measure]]
+id = "IAM-SNU-03"
+ksi = "KSI-IAM-SNU"
+objective = "Secrets that can't be avoided are stored safely and rotated."
+check = "Every database credential and third-party API token is in AWS Secrets Manager with automatic rotation of at most 90 days."
+metric = "Secrets without rotation; days since the oldest rotation."
+source = "aws-config"
+cycle = "continuous"
+automated = true
+evidence_type = "Configuration"
+controls = ["ac-2"]
+decisions = [
+    "AWS Secrets Manager holds every secret a service uses",
+    "Secrets rotate automatically at least every 90 days",
+]
+
+# KSI-IAM-SUS: Accounts with privileged access are disabled or otherwise secured in
+# response to suspicious activity.
+
+[[measure]]
+id = "IAM-SUS-01"
+ksi = "KSI-IAM-SUS"
+objective = "A privileged account showing suspicious activity is locked down automatically."
+check = "A high-severity identity alert on a privileged account disables it in the identity provider and revokes its AWS sessions within 15 minutes, pending review."
+metric = "Alerts on privileged accounts; median and maximum time from alert to disable."
+source = "siem"
+cycle = "continuous"
+automated = true
+evidence_type = "Log"
+controls = ["ac-2.12", "ac-2.13", "si-4"]
+decisions = [
+    "High-severity identity alerts come from the identity provider's risk signals and GuardDuty",
+    "Response is automatic: disable first, then review",
+    "The response must finish within 15 minutes",
+]
+
+[[measure]]
+id = "IAM-SUS-02"
+ksi = "KSI-IAM-SUS"
+objective = "The automated lockdown actually works."
+check = "A weekly synthetic alert on a canary privileged account confirms the account is disabled and its AWS sessions are revoked."
+metric = "Weekly tests passed in the last 90 days; time to disable in each test."
+source = "siem"
+cycle = "weekly"
+automated = true
+evidence_type = "Log"
+controls = ["ac-2.13", "si-4"]
+decisions = [
+    "A canary privileged account with no real permissions is used for the test",
+    "The test runs weekly",
+]

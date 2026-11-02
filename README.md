@@ -63,9 +63,10 @@ FedRAMP sets a minimum number of **automated** measures per KSI by certification
 |---|---|---|---|
 | KSI&#8209;CED | 1/1 | 1/1 | 1/1 |
 | KSI&#8209;CMT | 4/4 | 4/4 | 0/4 |
+| KSI&#8209;IAM | 6/6 | 6/6 | 0/6 |
 | KSI&#8209;INR | 3/3 | 3/3 | 0/3 |
 | KSI&#8209;MLA | 5/5 | 5/5 | 0/5 |
-| Other 6 themes | 0/33 | 0/33 | 0/33 |
+| Other 5 themes | 0/27 | 0/27 | 0/27 |
 
 ## Requirements vs. design decisions
 
@@ -77,7 +78,9 @@ Decisions that apply to every theme:
 - **Changes** go through GitHub pull requests with required checks.
 - **Logs** are centralized in a dedicated log archive account and a SIEM.
 - **Incidents** are issues in a private GitHub incident repository, and after action reports are merged pull requests in it.
-- **People and roles** come from an identity provider's accounts and groups.
+- **People and roles** come from an identity provider's accounts and groups. Staff sign in with phishing-resistant methods only, and reach AWS through IAM Identity Center.
+- **Customers** sign in through SAML or OIDC federation with their own identity provider, or with passkeys for local accounts.
+- **Shared responsibility:** measures check what the service provides and enforces. How customers configure their own identity providers and settings is their responsibility, and isn't measured.
 - **Training** is assigned and tracked in a training platform with a read-only reporting API.
 - **Manual reviews** are recorded as attestations and use the automated measures' results as inputs.
 - **The target** is Class C.
@@ -109,14 +112,14 @@ Separately, every Monday the **Upstream check** workflow hashes the pinned files
 ## Known gaps
 
 - **Upstream updates are applied by hand, on purpose.** The weekly check finds changes; copying new files and updating the test expectations is a reviewed pull request.
-- **Measures cover 4 of 10 themes.** Cybersecurity Education, Change Management, Incident Response, and Monitoring, Logging, and Auditing meet the Class C target; the other 33 KSIs have no measures yet.
+- **Measures cover 5 of 10 themes.** Cybersecurity Education, Change Management, Identity and Access Management, Incident Response, and Monitoring, Logging, and Auditing meet the Class C target; the other 27 KSIs have no measures yet.
 - **Per-measure decisions are only consolidated by running a command.** The README lists the service-wide decisions, but a reader on GitHub has to open each TOML file, or run `--decisions`, to see the rest. A generated page checked by tests would fix that.
 - **The training platform API is a placeholder.** `training.py` assumes a generic paged JSON endpoint. Connecting a real platform means mapping its endpoint and field names; the overdue check doesn't change. Who needs each course (identity provider groups, GitHub write access) isn't fetched yet.
 - **FedRAMP's five default artifacts don't map one-to-one to its SDR schema.** SDR&#8209;CSX&#8209;KSI lists five artifacts, but the SDR schema (v1.1.1) has implementation, validation, and assessment statements. The evidence step will document the mapping.
 
 ## Roadmap
 
-1. Measures for the other 6 themes, to Class C, starting with the rest of Class A's KSIs (FRC&#8209;CLA&#8209;MFR): IAM, CNA, and SVC
+1. Measures for the other 5 themes, to Class C, starting with the rest of Class A's KSIs (FRC&#8209;CLA&#8209;MFR): CNA and SVC
 2. A generated page of every measure's requirements and decisions, kept current by tests
 3. Machine-readable evidence per KSI as a Security Decision Record that validates against FedRAMP's SDR schema
 4. Coverage rollup from aws-federal-baseline's 800-53 annotations
