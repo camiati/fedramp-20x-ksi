@@ -51,6 +51,7 @@ def measures(catalog):
         ("IAM", 18, 2),
         ("INR", 11, 2),
         ("MLA", 14, 3),
+        ("SVC", 23, 3),
     ],
 )
 def test_measure_counts(measures, theme, total, manual):
@@ -75,6 +76,7 @@ def test_themes_with_measures_meet_the_target_class(catalog, measures):
         ("IAM", {"b": (6, 6), "c": (6, 6), "d": (0, 6)}),
         ("INR", {"b": (3, 3), "c": (3, 3), "d": (0, 3)}),
         ("MLA", {"b": (5, 5), "c": (5, 5), "d": (0, 5)}),
+        ("SVC", {"b": (8, 8), "c": (8, 8), "d": (0, 8)}),
     ],
 )
 def test_readiness_by_class(catalog, measures, theme, expected):

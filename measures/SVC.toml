@@ -1,0 +1,407 @@
+# Measures for KSI-SVC (Service Configuration).
+#
+# Theoretical cloud service: AWS infrastructure deployed by Terraform from a GitHub
+# repository, with workloads on Amazon ECS with Fargate. Each customer's data is
+# encrypted with its own AWS KMS key, so deleting the key removes the data everywhere,
+# including backups. Customer requests are tracked as issues in a private GitHub
+# repository.
+# Target: Class C, which needs at least 2 automated measures per KSI (FRC-CSX-VVK).
+# Field reference: measures/README.md.
+
+# KSI-SVC-ACM: The configuration of machine-based information resources is managed using
+# automation and persistently reviewed for drift.
+
+[[measure]]
+id = "SVC-ACM-01"
+ksi = "KSI-SVC-ACM"
+objective = "The configuration baseline is applied the same way everywhere."
+check = "Every production account runs the AWS Config conformance pack that encodes the configuration baseline, deployed by Terraform at the version on the default branch."
+metric = "Accounts without the conformance pack, or running an older version; conformance pack compliance rate."
+source = "aws-config"
+cycle = "continuous"
+automated = true
+evidence_type = "Configuration"
+controls = ["cm-2", "cm-2.2", "cm-6"]
+decisions = [
+    "The configuration baseline is encoded as an AWS Config conformance pack",
+    "The conformance pack is deployed by Terraform, like everything else",
+]
+
+[[measure]]
+id = "SVC-ACM-02"
+ksi = "KSI-SVC-ACM"
+objective = "Baseline changes are reviewed, and any earlier version can be restored."
+check = "Every change to the baseline is approved by the security lead as a code owner, and each released baseline version is tagged and kept so it can be redeployed."
+metric = "Baseline changes merged without security lead approval; released versions that can't be redeployed."
+source = "github"
+cycle = "per-change"
+automated = true
+evidence_type = "Audit Record"
+controls = ["cm-2", "cm-2.3"]
+decisions = [
+    "The security lead is a required code owner for the baseline",
+    "Every baseline release is a Git tag, and all tags are kept",
+]
+
+[[measure]]
+id = "SVC-ACM-03"
+ksi = "KSI-SVC-ACM"
+objective = "Drift patterns lead to a better baseline, not just repeated fixes."
+check = "Each quarter, the security lead reviews drift found by CMT-RMV-01, CNA-EIS-01, and CNA-EIS-02, and records baseline changes that would prevent repeat drift."
+metric = "Days since the last review; repeat drift by cause."
+source = "attestation"
+cycle = "quarterly"
+automated = false
+manual_reason = "Working out why drift keeps happening, and what would prevent it, needs human judgment. Automation finds and reverts the drift (CMT-RMV-01, CNA-EIS-01, CNA-EIS-02)."
+evidence_type = "Procedure"
+controls = ["cm-2", "cm-6"]
+decisions = [
+    "Drift is reviewed quarterly for root causes",
+]
+
+# KSI-SVC-ASM: Management, protection, and regular rotation of digital keys,
+# certificates, and other secrets is automated and persistently reviewed.
+
+[[measure]]
+id = "SVC-ASM-01"
+ksi = "KSI-SVC-ASM"
+objective = "Encryption keys rotate automatically and can be used only by their own service."
+check = "Every AWS KMS customer managed key has automatic rotation on, and its key policy allows use only by the roles of the service that owns it."
+metric = "Keys without automatic rotation; keys usable by roles outside their owning service."
+source = "aws-config"
+cycle = "continuous"
+automated = true
+evidence_type = "Configuration"
+controls = ["sc-12"]
+decisions = [
+    "KMS keys rotate automatically every year",
+    "Each key belongs to one service, and its key policy says so",
+]
+
+[[measure]]
+id = "SVC-ASM-02"
+ksi = "KSI-SVC-ASM"
+objective = "Certificates never expire unexpectedly or get managed by hand."
+check = "Every TLS certificate in use is issued and renewed by AWS Certificate Manager, none is imported, and none is within 30 days of expiry without a renewal in progress."
+metric = "Imported certificates; certificates within 30 days of expiry without renewal."
+source = "aws-config"
+cycle = "continuous"
+automated = true
+evidence_type = "Configuration"
+controls = ["sc-12", "sc-17"]
+decisions = [
+    "AWS Certificate Manager issues and renews every certificate",
+    "Imported certificates aren't allowed",
+]
+
+[[measure]]
+id = "SVC-ASM-03"
+ksi = "KSI-SVC-ASM"
+objective = "Secrets don't end up in code, and a leaked one is replaced fast."
+check = "Secret scanning with push protection is on for every repository, and every detected secret is revoked and rotated within 24 hours."
+metric = "Repositories without push protection; detected secrets not rotated within 24 hours."
+source = "github"
+cycle = "continuous"
+automated = true
+evidence_type = "Report"
+controls = ["ia-5.6"]
+decisions = [
+    "GitHub secret scanning with push protection guards every repository",
+    "A leaked secret must be revoked and rotated within 24 hours",
+]
+
+# KSI-SVC-EIS: Information resources are persistently evaluated for opportunities to
+# improve security and those improvements are persistently made.
+
+[[measure]]
+id = "SVC-EIS-01"
+ksi = "KSI-SVC-EIS"
+objective = "Security fixes in dependencies are proposed and merged automatically."
+check = "Dependabot security updates are on for every repository, and their pull requests are merged within 14 days."
+metric = "Repositories without Dependabot security updates; security update pull requests open longer than 14 days."
+source = "github"
+cycle = "daily"
+automated = true
+evidence_type = "Report"
+controls = ["si-2.2"]
+decisions = [
+    "Dependabot proposes dependency security fixes",
+    "Its pull requests are merged within 14 days",
+]
+
+[[measure]]
+id = "SVC-EIS-02"
+ksi = "KSI-SVC-EIS"
+objective = "Improvement ideas are tracked until they're done or deliberately declined."
+check = "Security improvements are issues with a security-improvement label, and none is open longer than 180 days without a recorded decision."
+metric = "Improvements opened and closed per month; improvements older than 180 days without a decision."
+source = "github"
+cycle = "monthly"
+automated = true
+evidence_type = "Report"
+controls = ["ra-3"]
+decisions = [
+    "Security improvements are tracked as labeled GitHub issues",
+    "Each one gets a decision within 180 days",
+]
+
+[[measure]]
+id = "SVC-EIS-03"
+ksi = "KSI-SVC-EIS"
+objective = "Each service is regularly re-examined for new ways to improve its security."
+check = "Each quarter, service owners and the security lead update each service's threat model and file the improvements they find under SVC-EIS-02."
+metric = "Services whose threat model wasn't updated this quarter; improvements filed per review."
+source = "attestation"
+cycle = "quarterly"
+automated = false
+manual_reason = "Finding new threats and better designs needs people who know the service. Automation tracks the improvements they file (SVC-EIS-02)."
+evidence_type = "Procedure"
+controls = ["pl-8", "ra-3"]
+decisions = [
+    "Every service has a threat model, updated quarterly",
+]
+
+# KSI-SVC-PRR: Plans, procedures, and the state of information resources are
+# persistently reviewed after making changes to limit and remove unwanted residual
+# elements that would likely negatively affect the confidentiality, integrity, or
+# availability of federal customer data. (FedRAMP marks this Optional for Class B; this
+# file measures the Class C statement.)
+
+[[measure]]
+id = "SVC-PRR-01"
+ksi = "KSI-SVC-PRR"
+objective = "Changes don't leave orphaned resources behind."
+check = "A daily scan finds unattached volumes, unused security groups, unused IAM roles, and snapshots with no owning resource, and each one is removed within 30 days."
+metric = "Orphaned resources by type and age; orphans older than 30 days."
+source = "aws-config"
+cycle = "daily"
+automated = true
+evidence_type = "Report"
+controls = ["sc-4"]
+decisions = [
+    "Orphans are found by a daily scan of the AWS Config inventory",
+    "Orphans are removed within 30 days",
+]
+
+[[measure]]
+id = "SVC-PRR-02"
+ksi = "KSI-SVC-PRR"
+objective = "Removed components don't leave DNS records anyone could take over."
+check = "No DNS record in the service's hosted zones points to a resource that no longer exists."
+metric = "Dangling DNS records, and how long each existed."
+source = "aws-config"
+cycle = "daily"
+automated = true
+evidence_type = "Report"
+controls = ["sc-4"]
+decisions = [
+    "Dangling DNS records are treated as residual risk, because they allow subdomain takeover",
+]
+
+[[measure]]
+id = "SVC-PRR-03"
+ksi = "KSI-SVC-PRR"
+objective = "Plans and procedures keep up with what changed."
+check = "Each quarter, service owners review runbooks, recovery plans, and procedures for steps or references left over from removed or changed components, using SVC-PRR-01 and 02 results as inputs, and record updates."
+metric = "Days since the last review; stale references found per review."
+source = "attestation"
+cycle = "quarterly"
+automated = false
+manual_reason = "Spotting a procedure step that no longer makes sense needs someone who knows the service. Automation finds leftover resources (SVC-PRR-01 and 02)."
+evidence_type = "Procedure"
+controls = ["sc-4"]
+decisions = [
+    "Runbooks and plans are reviewed quarterly for leftovers from past changes",
+]
+
+# KSI-SVC-RUD: Unwanted federal customer data is removed promptly when requested by an
+# agency in alignment with customer agreements, including from backups if appropriate;
+# this typically applies when a customer spills information or when a customer seeks to
+# remove information from a service due to a change in usage. (FedRAMP marks this
+# Optional for Class B; this file measures the Class C statement.)
+
+[[measure]]
+id = "SVC-RUD-01"
+ksi = "KSI-SVC-RUD"
+objective = "Agency requests to remove data are completed promptly and confirmed."
+check = "Every agency data removal request is completed in production and confirmed to the agency within 7 days of the request."
+metric = "Median and maximum days from request to confirmation; requests open longer than 7 days."
+source = "github"
+cycle = "daily"
+automated = true
+evidence_type = "Report"
+controls = ["ir-9", "si-12.3"]
+decisions = [
+    "7 days is this service's reading of 'promptly', which FedRAMP defines as 'without unnecessary delay'",
+    "Removal requests are tracked as issues in the private customer requests repository",
+]
+
+[[measure]]
+id = "SVC-RUD-02"
+ksi = "KSI-SVC-RUD"
+objective = "Removing a customer's data reaches backups too."
+check = "Every data store and backup holding customer data is encrypted with that customer's own KMS key, so scheduling the key for deletion makes every copy unreadable."
+metric = "Data stores or backups holding customer data that don't use a per-customer key."
+source = "aws-config"
+cycle = "continuous"
+automated = true
+evidence_type = "Configuration"
+controls = ["si-12.3"]
+decisions = [
+    "Each customer's data is encrypted with its own KMS key",
+    "Data is removed from backups by deleting the key (crypto-shredding), rather than editing backups",
+]
+
+[[measure]]
+id = "SVC-RUD-03"
+ksi = "KSI-SVC-RUD"
+objective = "Data removal actually works, end to end."
+check = "A monthly test with a synthetic customer uploads data, requests its removal, and confirms the data is gone from primary stores and that its backups can't be decrypted."
+metric = "Monthly tests passed in the last year; copies found after removal."
+source = "github"
+cycle = "monthly"
+automated = true
+evidence_type = "Report"
+controls = ["ir-9", "si-12.3"]
+decisions = [
+    "A synthetic customer is used for the removal test, never a real one",
+    "The test runs monthly",
+]
+
+# KSI-SVC-SIN: Information is encrypted or otherwise secured from unwanted access or
+# modification.
+
+[[measure]]
+id = "SVC-SIN-01"
+ksi = "KSI-SVC-SIN"
+objective = "Stored information is encrypted, including backups."
+check = "Every S3 bucket, EBS volume, RDS database, DynamoDB table, ElastiCache cluster, and AWS Backup vault in production is encrypted with a KMS customer managed key."
+metric = "Production data stores or backup vaults not encrypted with a customer managed key."
+source = "aws-config"
+cycle = "continuous"
+automated = true
+evidence_type = "Configuration"
+controls = ["sc-28", "sc-28.1", "cp-9.8"]
+decisions = [
+    "Customer managed KMS keys, not AWS managed keys, encrypt every data store and backup",
+]
+
+[[measure]]
+id = "SVC-SIN-02"
+ksi = "KSI-SVC-SIN"
+objective = "Information is encrypted whenever it moves over a network."
+check = "Every load balancer listener uses TLS 1.2 or later with an approved security policy, HTTP listeners only redirect to HTTPS, S3 bucket policies deny requests without TLS, and databases require TLS connections."
+metric = "Listeners, buckets, or databases that allow unencrypted or older TLS connections."
+source = "aws-config"
+cycle = "continuous"
+automated = true
+evidence_type = "Configuration"
+controls = ["sc-8", "sc-8.1"]
+decisions = [
+    "TLS 1.2 is the minimum version",
+    "HTTP is allowed only to redirect to HTTPS",
+]
+
+[[measure]]
+id = "SVC-SIN-03"
+ksi = "KSI-SVC-SIN"
+objective = "The cryptography protecting customer data is documented and validated."
+check = "A version-controlled inventory lists the cryptographic module each service uses to protect federal customer data and whether it has an active NIST Cryptographic Module Validation Program validation; a test fails if any service is missing or uses an unvalidated module, and services call AWS FIPS endpoints."
+metric = "Services missing from the inventory; services using modules without an active validation."
+source = "github"
+cycle = "per-change"
+automated = true
+evidence_type = "Configuration"
+controls = ["sc-13"]
+rules = ["CMU-CSO-CMD", "CMU-CSO-UVM"]
+decisions = [
+    "The cryptographic module inventory lives in code and is checked by tests",
+    "Services use AWS FIPS endpoints",
+    "Unvalidated modules fail the test, even though CMU-CSO-UVM is a SHOULD at Class C",
+]
+
+# KSI-SVC-VCM: The authenticity and integrity of communications between machine-based
+# information resources is persistently validated using automation. (FedRAMP marks this
+# Optional for Class B; this file measures the Class C statement.)
+
+[[measure]]
+id = "SVC-VCM-01"
+ksi = "KSI-SVC-VCM"
+objective = "Services confirm who they're talking to before trusting a request."
+check = "Every call between services uses mutual TLS with certificates from AWS Private CA, and each service verifies the caller's certificate."
+metric = "Service-to-service connections without mutual TLS."
+source = "aws-config"
+cycle = "continuous"
+automated = true
+evidence_type = "Configuration"
+controls = ["sc-23"]
+decisions = [
+    "Mutual TLS authenticates every service-to-service call",
+    "AWS Private CA issues the service certificates",
+]
+
+[[measure]]
+id = "SVC-VCM-02"
+ksi = "KSI-SVC-VCM"
+objective = "Messages from outside systems are checked before they're acted on."
+check = "Tests on every change confirm each inbound webhook and integration endpoint rejects messages with a missing or invalid signature."
+metric = "Changes merged with a failing signature test; endpoints without a signature test."
+source = "github"
+cycle = "per-change"
+automated = true
+evidence_type = "Audit Record"
+controls = ["sc-23", "si-7.1"]
+decisions = [
+    "Every inbound webhook and integration must verify a signature",
+    "Signature checks are enforced by tests on every change",
+]
+
+[[measure]]
+id = "SVC-VCM-03"
+ksi = "KSI-SVC-VCM"
+objective = "Failed or unencrypted connections between services are noticed."
+check = "The SIEM alerts on failed TLS handshakes and on any plaintext connection between services."
+metric = "Failed handshakes and plaintext connections between services; time to triage."
+source = "siem"
+cycle = "continuous"
+automated = true
+evidence_type = "Log"
+controls = ["sc-23"]
+decisions = [
+    "Failed handshakes are treated as possible tampering until explained",
+]
+
+# KSI-SVC-VRI: Use cryptographic methods to validate the integrity of machine-based
+# information resources.
+
+[[measure]]
+id = "SVC-VRI-01"
+ksi = "KSI-SVC-VRI"
+objective = "Code and builds can be traced to who made them, cryptographically."
+check = "Every commit on the default branch has a verified signature, and every release artifact has signed build provenance."
+metric = "Unsigned commits on the default branch; release artifacts without signed provenance."
+source = "github"
+cycle = "per-change"
+automated = true
+evidence_type = "Audit Record"
+controls = ["cm-14", "si-7.15"]
+decisions = [
+    "A GitHub ruleset requires signed commits on the default branch",
+    "Build provenance is signed by the pipeline using GitHub artifact attestations",
+]
+
+[[measure]]
+id = "SVC-VRI-02"
+ksi = "KSI-SVC-VRI"
+objective = "Third-party components are exactly the versions that were reviewed."
+check = "Terraform provider lock files, package lock files with hashes, and GitHub Actions pinned to full commit SHAs are required, and the pipeline fails on any hash mismatch."
+metric = "Unpinned dependencies or actions; builds failed on a hash mismatch."
+source = "github"
+cycle = "per-change"
+automated = true
+evidence_type = "Configuration"
+controls = ["sr-11", "si-7"]
+decisions = [
+    "Every third-party component is pinned by cryptographic hash",
+    "A hash mismatch fails the build",
+]
