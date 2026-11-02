@@ -1,0 +1,468 @@
+# Measures for KSI-CNA (Cloud Native Architecture).
+#
+# Theoretical cloud service: AWS infrastructure deployed by Terraform from a GitHub
+# repository. Workloads run as containers on Amazon ECS with Fargate in private subnets,
+# and the only public entry points are load balancers behind AWS WAF. Third-party
+# machine-based information resources are the services used from other providers: AWS,
+# GitHub, and the identity provider.
+# Target: Class C, which needs at least 2 automated measures per KSI (FRC-CSX-VVK).
+# Field reference: measures/README.md.
+
+# KSI-CNA-DFP: The functionality and privileges for infrastructure and services are
+# strictly defined.
+
+[[measure]]
+id = "CNA-DFP-01"
+ksi = "KSI-CNA-DFP"
+objective = "Everything running in production is defined in code and has an owner."
+check = "Every resource in the AWS Config inventory for production is managed by Terraform and tagged with its owning team and service."
+metric = "Production resources not in Terraform state; resources missing owner or service tags."
+source = "aws-config"
+cycle = "daily"
+automated = true
+evidence_type = "Report"
+controls = ["cm-2", "cm-8.4"]
+decisions = [
+    "Terraform state is the definition of what should exist",
+    "Every resource carries owner and service tags",
+]
+
+[[measure]]
+id = "CNA-DFP-02"
+ksi = "KSI-CNA-DFP"
+objective = "Containers can do only what their task definitions allow."
+check = "Every ECS task definition in production runs containers as non-root, with a read-only root filesystem, no privileged mode, and no added Linux capabilities."
+metric = "Task definitions failing any of the four settings."
+source = "aws-config"
+cycle = "continuous"
+automated = true
+evidence_type = "Configuration"
+controls = ["cm-2"]
+decisions = [
+    "Containers run as non-root with a read-only root filesystem",
+    "Privileged mode and added Linux capabilities are never allowed",
+]
+
+[[measure]]
+id = "CNA-DFP-03"
+ksi = "KSI-CNA-DFP"
+objective = "Only images built and scanned by the pipeline can run."
+check = "Every image deployed to production was built by the pipeline from an approved base image and passed malware and vulnerability scans before release."
+metric = "Deployed images without a pipeline build record or a passing scan."
+source = "github"
+cycle = "per-change"
+automated = true
+evidence_type = "Audit Record"
+controls = ["cm-2", "si-3"]
+decisions = [
+    "Images come from a short list of approved base images",
+    "Malware and vulnerability scans gate every release",
+]
+
+# KSI-CNA-EIS: Automated services are used to persistently assess the security of all
+# machine-based information resources and automatically enforce their intended
+# operational state. (FedRAMP marks this Optional for Class B; this file measures the
+# Class C statement.)
+
+[[measure]]
+id = "CNA-EIS-01"
+ksi = "KSI-CNA-EIS"
+objective = "Known misconfigurations are fixed automatically, not just reported."
+check = "Every AWS Config rule with an automatic remediation fixes its noncompliant resources within 1 hour."
+metric = "Noncompliant resources older than 1 hour on rules with automatic remediation; remediation failures."
+source = "aws-config"
+cycle = "continuous"
+automated = true
+evidence_type = "Configuration"
+controls = ["cm-6.2"]
+decisions = [
+    "AWS Config automatic remediation is the enforcement mechanism for configuration rules",
+    "Remediation must finish within 1 hour",
+]
+
+[[measure]]
+id = "CNA-EIS-02"
+ksi = "KSI-CNA-EIS"
+objective = "Drift from the code is reverted automatically."
+check = "Drift found by the scheduled Terraform plan (CMT-RMV-01) is reverted by reapplying the default branch within 24 hours, unless an approved break-glass change is open."
+metric = "Drift older than 24 hours without a break-glass record; automatic reverts per month."
+source = "terraform"
+cycle = "daily"
+automated = true
+evidence_type = "Log"
+controls = ["cm-6.2", "cp-10.4"]
+decisions = [
+    "Drift is reverted by reapplying code, not by fixing resources by hand",
+    "Reverts happen within 24 hours, and an approved break-glass change pauses them",
+]
+
+[[measure]]
+id = "CNA-EIS-03"
+ksi = "KSI-CNA-EIS"
+objective = "What runs is exactly what the pipeline built."
+check = "The deployment step verifies each image's signature, task definitions reference images by digest, and unhealthy tasks are replaced automatically."
+metric = "Deployments without signature verification; task definitions using tags instead of digests."
+source = "github"
+cycle = "per-change"
+automated = true
+evidence_type = "Audit Record"
+controls = ["si-7", "si-7.1"]
+decisions = [
+    "Images are signed by the pipeline and verified before deployment",
+    "Task definitions pin images by digest, never by tag",
+]
+
+# KSI-CNA-IBP: The use and configuration of third-party machine-based information
+# resources is persistently compared against the original provider's best practices
+# and guidance.
+
+[[measure]]
+id = "CNA-IBP-01"
+ksi = "KSI-CNA-IBP"
+objective = "AWS is configured the way AWS recommends."
+check = "AWS Security Hub runs the AWS Foundational Security Best Practices standard in every account and Region, and critical and high findings are fixed within 30 days or excepted."
+metric = "Standard pass rate; critical and high findings older than 30 days without an exception."
+source = "aws-security-hub"
+cycle = "continuous"
+automated = true
+evidence_type = "Report"
+controls = ["cm-2", "pl-10"]
+decisions = [
+    "AWS Foundational Security Best Practices is AWS's guidance to compare against",
+    "Critical and high findings are fixed within 30 days, or get a recorded exception",
+]
+
+[[measure]]
+id = "CNA-IBP-02"
+ksi = "KSI-CNA-IBP"
+objective = "GitHub is configured the way GitHub recommends."
+check = "A weekly job compares the GitHub organization's security settings with GitHub's recommended settings, and each difference has a recorded reason."
+metric = "Settings that differ from GitHub's recommendations without a recorded reason."
+source = "github"
+cycle = "weekly"
+automated = true
+evidence_type = "Report"
+controls = ["cm-2"]
+decisions = [
+    "GitHub's own security recommendations for organizations are the guidance to compare against",
+    "The comparison runs weekly through the GitHub API",
+]
+
+[[measure]]
+id = "CNA-IBP-03"
+ksi = "KSI-CNA-IBP"
+objective = "The identity provider is configured the way its vendor recommends."
+check = "A weekly job reads the identity provider's own security recommendations report, and each open recommendation is fixed or has a recorded reason."
+metric = "Open vendor recommendations without a fix or a recorded reason."
+source = "identity-provider"
+cycle = "weekly"
+automated = true
+evidence_type = "Report"
+controls = ["cm-2"]
+decisions = [
+    "The identity provider's built-in recommendations report is the guidance to compare against",
+]
+
+[[measure]]
+id = "CNA-IBP-04"
+ksi = "KSI-CNA-IBP"
+objective = "The comparisons keep up with what providers recommend."
+check = "Each quarter, the security lead checks each third-party provider's published security guidance for changes since the last review, and updates CNA-IBP-01 to 03 to match."
+metric = "Days since the last review; guidance changes not yet reflected in the automated comparisons."
+source = "attestation"
+cycle = "quarterly"
+automated = false
+manual_reason = "Reading new provider guidance and deciding whether it applies needs a person. Automation then checks the settings (CNA-IBP-01 to 03)."
+evidence_type = "Procedure"
+controls = ["cm-2", "pl-10"]
+decisions = [
+    "Provider guidance is rechecked quarterly",
+]
+
+# KSI-CNA-MAT: Machine-based information resources are persistently reviewed to ensure
+# they have a minimal attack surface and that lateral movement is minimized if
+# compromised.
+
+[[measure]]
+id = "CNA-MAT-01"
+ksi = "KSI-CNA-MAT"
+objective = "Only the intended entry points are reachable from the internet."
+check = "No EC2 instance, ECS task, database, or cache in production has a public IP address or public endpoint; only the approved load balancers are internet-facing."
+metric = "Public resources other than the approved load balancers."
+source = "aws-config"
+cycle = "continuous"
+automated = true
+evidence_type = "Configuration"
+controls = ["sc-7.3"]
+decisions = [
+    "Load balancers are the only internet-facing resources",
+]
+
+[[measure]]
+id = "CNA-MAT-02"
+ksi = "KSI-CNA-MAT"
+objective = "There's no remote administration path for an attacker to use."
+check = "No security group allows SSH or RDP, and administrative access to production goes only through AWS Systems Manager Session Manager."
+metric = "Security groups allowing SSH or RDP; administrative sessions outside Session Manager."
+source = "aws-config"
+cycle = "continuous"
+automated = true
+evidence_type = "Configuration"
+controls = ["ac-17.3"]
+decisions = [
+    "SSH and RDP are never opened",
+    "Session Manager is the only administrative access path",
+]
+
+[[measure]]
+id = "CNA-MAT-03"
+ksi = "KSI-CNA-MAT"
+objective = "Public endpoints reject bad input and don't leak internal details."
+check = "A dynamic application security scan of staging on every release finds no high-severity injection or information-disclosure findings."
+metric = "Releases with high-severity input validation or error-handling findings."
+source = "github"
+cycle = "per-change"
+automated = true
+evidence_type = "Report"
+controls = ["si-10", "si-11"]
+decisions = [
+    "A dynamic scan of staging gates every release",
+    "High-severity findings block the release",
+]
+
+[[measure]]
+id = "CNA-MAT-04"
+ksi = "KSI-CNA-MAT"
+objective = "The attack surface is judged as a whole, not just rule by rule."
+check = "Each quarter, the security lead reviews the list of public endpoints and connections between components, using CNA-MAT-01 to 03 results as inputs, and records reductions to make."
+metric = "Days since the last review; reductions still open."
+source = "attestation"
+cycle = "quarterly"
+automated = false
+manual_reason = "Deciding whether an endpoint or connection is still needed takes knowledge of the product. Automation supplies the inputs (CNA-MAT-01 to 03)."
+evidence_type = "Procedure"
+controls = ["sc-7.3", "ca-9"]
+decisions = [
+    "The attack surface is reviewed quarterly",
+]
+
+# KSI-CNA-OFA: Machine-based information resources are persistently reviewed to ensure
+# they are appropriately optimized for high availability and rapid recovery.
+
+[[measure]]
+id = "CNA-OFA-01"
+ksi = "KSI-CNA-OFA"
+objective = "No single Availability Zone failure takes the service down."
+check = "Every production ECS service runs tasks in at least 3 Availability Zones, and every database and cache is Multi-AZ."
+metric = "Services, databases, and caches below the Availability Zone minimum."
+source = "aws-config"
+cycle = "continuous"
+automated = true
+evidence_type = "Configuration"
+controls = ["cp-2.5"]
+decisions = [
+    "Services run in at least 3 Availability Zones",
+    "Databases and caches are Multi-AZ",
+]
+
+[[measure]]
+id = "CNA-OFA-02"
+ksi = "KSI-CNA-OFA"
+objective = "Encryption keys stay available, including during a Regional recovery."
+check = "Every KMS key used in production is a multi-Region key with a replica in the recovery Region, and no key is scheduled for deletion without an approved change."
+metric = "Keys without a recovery-Region replica; keys pending deletion without approval."
+source = "aws-config"
+cycle = "continuous"
+automated = true
+evidence_type = "Configuration"
+controls = ["sc-12.1"]
+decisions = [
+    "KMS keys are multi-Region, with replicas in one recovery Region",
+    "Deleting a key requires an approved change",
+]
+
+[[measure]]
+id = "CNA-OFA-03"
+ksi = "KSI-CNA-OFA"
+objective = "Availability design keeps up with how the service is used."
+check = "Each quarter, service owners review availability objectives against actual uptime, incidents, and capacity, and record changes to make."
+metric = "Days since the last review; services missing their availability objective."
+source = "attestation"
+cycle = "quarterly"
+automated = false
+manual_reason = "Weighing availability against cost and design needs human judgment. Automation supplies uptime and configuration data (CNA-OFA-01 and 02)."
+evidence_type = "Procedure"
+controls = ["cp-2.5"]
+decisions = [
+    "Each service has an availability objective",
+    "Objectives are reviewed quarterly",
+]
+
+# KSI-CNA-RNT: Machine-based information resources are persistently reviewed to ensure
+# they are appropriately configured to limit inbound and outbound network traffic.
+
+[[measure]]
+id = "CNA-RNT-01"
+ksi = "KSI-CNA-RNT"
+objective = "Inbound traffic is denied unless it's explicitly needed."
+check = "No security group allows inbound traffic from 0.0.0.0/0 or ::/0 except the approved load balancers on port 443, and every default security group has no rules."
+metric = "Security groups open to the internet outside the exception; default security groups with rules."
+source = "aws-config"
+cycle = "continuous"
+automated = true
+evidence_type = "Configuration"
+controls = ["sc-7.5", "cm-7.1"]
+decisions = [
+    "Port 443 on the approved load balancers is the only internet-facing inbound rule",
+    "Default security groups are left empty",
+]
+
+[[measure]]
+id = "CNA-RNT-02"
+ksi = "KSI-CNA-RNT"
+objective = "Outbound traffic goes only to approved destinations."
+check = "Workload subnets have no direct route to the internet; outbound traffic passes through AWS Network Firewall with a domain allowlist, and AWS services are reached through VPC endpoints."
+metric = "Workload subnets with a direct internet route; allowlist entries; denied outbound requests."
+source = "aws-config"
+cycle = "continuous"
+automated = true
+evidence_type = "Configuration"
+controls = ["sc-7.5", "sc-7.10"]
+decisions = [
+    "AWS Network Firewall enforces a domain allowlist for all outbound traffic",
+    "VPC endpoints are used for AWS services, so that traffic never leaves AWS's network",
+]
+
+[[measure]]
+id = "CNA-RNT-03"
+ksi = "KSI-CNA-RNT"
+objective = "Unusual traffic is noticed, even when it's allowed."
+check = "VPC Flow Logs are on for every production VPC and analyzed in the SIEM, and denied outbound attempts or traffic to new destinations raise an alert."
+metric = "VPCs without flow logs; alerts on denied or unexpected traffic, and time to triage."
+source = "siem"
+cycle = "continuous"
+automated = true
+evidence_type = "Log"
+controls = ["si-4.4", "si-4.18"]
+decisions = [
+    "VPC Flow Logs are the source for traffic analysis",
+    "Denied outbound attempts always alert",
+]
+
+[[measure]]
+id = "CNA-RNT-04"
+ksi = "KSI-CNA-RNT"
+objective = "Exceptions and allowlists don't grow without anyone noticing."
+check = "Each quarter, the security lead reviews the outbound allowlist and security group exceptions, using CNA-RNT-01 to 03 results as inputs, and removes entries no longer needed."
+metric = "Days since the last review; entries removed per review."
+source = "attestation"
+cycle = "quarterly"
+automated = false
+manual_reason = "Deciding whether a destination or port is still needed takes knowledge of the service. Automation supplies the inputs (CNA-RNT-01 to 03)."
+evidence_type = "Procedure"
+controls = ["cm-7.1"]
+decisions = [
+    "The allowlist and exceptions are reviewed quarterly",
+]
+
+# KSI-CNA-RVP: The effectiveness of protection against denial of service attacks and
+# other unwanted activity for machine-based information resources is persistently
+# reviewed.
+
+[[measure]]
+id = "CNA-RVP-01"
+ksi = "KSI-CNA-RVP"
+objective = "Every public endpoint is protected against denial of service and common attacks."
+check = "Every internet-facing load balancer has an AWS WAF web ACL with rate-based rules and AWS managed rule groups, and is protected by AWS Shield Advanced."
+metric = "Public endpoints without a compliant web ACL or Shield Advanced protection."
+source = "aws-config"
+cycle = "continuous"
+automated = true
+evidence_type = "Configuration"
+controls = ["sc-5"]
+decisions = [
+    "AWS WAF with rate-based rules and managed rule groups protects every public endpoint",
+    "AWS Shield Advanced is used for denial of service protection",
+]
+
+[[measure]]
+id = "CNA-RVP-02"
+ksi = "KSI-CNA-RVP"
+objective = "The protections actually block what they should."
+check = "A weekly test sends traffic above the rate limit, plus known attack patterns, to the staging endpoint and confirms AWS WAF blocks them."
+metric = "Weekly tests passed in the last 90 days; test requests not blocked."
+source = "github"
+cycle = "weekly"
+automated = true
+evidence_type = "Report"
+controls = ["sc-5"]
+decisions = [
+    "Protections are tested weekly against staging, never production",
+]
+
+[[measure]]
+id = "CNA-RVP-03"
+ksi = "KSI-CNA-RVP"
+objective = "The rules are tuned so they block attacks without blocking customers."
+check = "Each quarter, the security lead reviews AWS WAF and Shield events, blocked legitimate requests, and CNA-RVP-02 results, and records rule changes."
+metric = "Days since the last review; rule changes per review; blocked legitimate requests reported."
+source = "attestation"
+cycle = "quarterly"
+automated = false
+manual_reason = "Telling attacks from unusual but legitimate customer traffic needs human judgment. Automation supplies the events and test results (CNA-RVP-01 and 02)."
+evidence_type = "Procedure"
+controls = ["sc-5"]
+decisions = [
+    "Protection rules are tuned quarterly",
+]
+
+# KSI-CNA-ULN: Logical networking and related capabilities are used and persistently
+# reviewed to enforce traffic flow controls.
+
+[[measure]]
+id = "CNA-ULN-01"
+ksi = "KSI-CNA-ULN"
+objective = "Production is separated from everything else, and data stores from the internet."
+check = "Production VPCs have no peering or Transit Gateway routes to non-production VPCs, and databases and caches are only in private subnets with no internet route."
+metric = "Routes between production and non-production; data stores in subnets with an internet route."
+source = "aws-config"
+cycle = "continuous"
+automated = true
+evidence_type = "Configuration"
+controls = ["sc-7", "sc-7.21"]
+decisions = [
+    "Production has its own VPCs, with no network path to non-production",
+    "Data stores live only in private subnets",
+]
+
+[[measure]]
+id = "CNA-ULN-02"
+ksi = "KSI-CNA-ULN"
+objective = "Services can reach only the services they're meant to."
+check = "Each service has its own security group, and rules between services reference security groups rather than IP address ranges."
+metric = "Security group rules between services that use IP address ranges; services sharing a security group."
+source = "aws-config"
+cycle = "continuous"
+automated = true
+evidence_type = "Configuration"
+controls = ["sc-7", "ac-4.21"]
+decisions = [
+    "One security group per service",
+    "Rules between services reference security groups, never IP ranges",
+]
+
+[[measure]]
+id = "CNA-ULN-03"
+ksi = "KSI-CNA-ULN"
+objective = "Actual traffic matches the approved data flows."
+check = "Approved data flows between components are declared in code, and the SIEM compares VPC Flow Logs against them daily, flagging any flow that isn't declared."
+metric = "Undeclared flows found; days to resolve each one."
+source = "siem"
+cycle = "daily"
+automated = true
+evidence_type = "Report"
+controls = ["ca-9", "sc-7"]
+decisions = [
+    "Approved data flows are declared in code alongside the infrastructure",
+    "Undeclared flows are flagged daily",
+]
