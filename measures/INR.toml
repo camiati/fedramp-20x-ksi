@@ -1,0 +1,195 @@
+# Measures for KSI-INR (Incident Response).
+#
+# Theoretical cloud service: AWS infrastructure deployed by Terraform from a GitHub
+# repository. Incidents are tracked as issues in a private GitHub incident repository,
+# after action reports are merged pull requests in it, and alerts come from the SIEM.
+# Target: Class C, which needs at least 2 automated measures per KSI (FRC-CSX-VVK).
+# Field reference: measures/README.md.
+
+# KSI-INR-AAR: Incident after action reports are generated and lessons learned are
+# persistently incorporated.
+
+[[measure]]
+id = "INR-AAR-01"
+ksi = "KSI-INR-AAR"
+objective = "Every incident ends with an after action report."
+check = "Every closed incident issue links a merged after action report, merged within 14 days of the incident closing."
+metric = "Share of incidents closed in the last 90 days with an on-time after action report; reports overdue."
+source = "github"
+cycle = "daily"
+automated = true
+evidence_type = "Report"
+controls = ["ir-4"]
+decisions = [
+    "After action reports are merged pull requests in the incident repository, linked from the incident issue",
+    "Reports are due within 14 days of the incident closing",
+]
+
+[[measure]]
+id = "INR-AAR-02"
+ksi = "KSI-INR-AAR"
+objective = "Lessons learned turn into changes that actually get made."
+check = "Every action item in an after action report is an issue with an owner and a due date, and none is open past its due date."
+metric = "Open action items past their due date, and their age."
+source = "github"
+cycle = "daily"
+automated = true
+evidence_type = "Report"
+controls = ["ir-4", "ir-8"]
+decisions = [
+    "Action items are tracked as GitHub issues, so they can be counted automatically",
+    "Each action item needs an owner and a due date",
+]
+
+[[measure]]
+id = "INR-AAR-03"
+ksi = "KSI-INR-AAR"
+objective = "Exercises are learned from the same way as real incidents."
+check = "Every incident response exercise has a merged after action report within 14 days of the exercise."
+metric = "Exercises in the last year with an on-time after action report."
+source = "github"
+cycle = "per-change"
+automated = true
+evidence_type = "Report"
+controls = ["ir-3", "ir-4"]
+decisions = [
+    "Exercises are tracked as issues in the incident repository, labeled as exercises",
+    "Exercise reports use the same 14-day deadline as incidents",
+]
+
+# KSI-INR-RIR: The effectiveness of documented incident response procedures is
+# persistently reviewed.
+
+[[measure]]
+id = "INR-RIR-01"
+ksi = "KSI-INR-RIR"
+objective = "The incident response plan is kept current."
+check = "The incident response plan in the incident repository was last approved by the security lead within 365 days, and any after action report that flags it for change has a merged update."
+metric = "Days since the plan was last approved; flagged changes not yet made."
+source = "github"
+cycle = "daily"
+automated = true
+evidence_type = "Policy"
+controls = ["ir-8", "ir-8.1"]
+decisions = [
+    "The plan is a version-controlled document, approved through a pull request review by the security lead",
+    "The plan is reapproved every 365 days, and after any incident that flags it for change",
+]
+
+[[measure]]
+id = "INR-RIR-02"
+ksi = "KSI-INR-RIR"
+objective = "The procedure for evaluating and reporting incidents to FedRAMP and customers is followed every time."
+check = "Every incident records a FedRAMP reportability decision, and every FedRAMP Reportable Incident records an initial report, ongoing reports, and a final report to all affected parties."
+metric = "Incidents without a reportability decision; reportable incidents missing a required report; hours from detection to the reportability decision."
+source = "github"
+cycle = "daily"
+automated = true
+evidence_type = "Audit Record"
+controls = ["ir-6", "ir-6.1", "ir-7"]
+rules = ["IEC-CSO-EFR", "IEC-CSO-IIR", "IEC-CSO-OIR", "IEC-CSO-FIR"]
+decisions = [
+    "Reportability decisions and reports are recorded as fields and linked comments on the incident issue",
+    "Hours to the reportability decision is tracked as the measure of promptness",
+]
+
+[[measure]]
+id = "INR-RIR-03"
+ksi = "KSI-INR-RIR"
+objective = "The detection-to-response path works end to end, not just on paper."
+check = "A synthetic high-severity alert sent each week opens an incident issue automatically and pages the on-call responder, who acknowledges it."
+metric = "Weekly tests passed in the last 90 days; minutes from alert to acknowledgment."
+source = "siem"
+cycle = "weekly"
+automated = true
+evidence_type = "Log"
+controls = ["si-4.5", "ir-4.1"]
+decisions = [
+    "A synthetic alert tests the response path every week",
+    "High-severity SIEM alerts open incident issues and page on-call automatically",
+]
+
+[[measure]]
+id = "INR-RIR-04"
+ksi = "KSI-INR-RIR"
+objective = "People who run incident response judge whether the procedures still work."
+check = "An annual tabletop exercise walks through the incident response procedures, using INR-RIR-01 to 03 results as inputs, and the changes it leads to are tracked to closure."
+metric = "Days since the last tabletop; changes from it still open."
+source = "attestation"
+cycle = "annual"
+automated = false
+manual_reason = "Judging whether procedures work in a realistic scenario needs people. Automation supplies the inputs (INR-RIR-01 to 03)."
+evidence_type = "Procedure"
+controls = ["ir-4", "ir-8"]
+decisions = [
+    "Effectiveness is reviewed through an annual tabletop exercise",
+    "INR-RIR-01 to 03 results are the exercise's inputs",
+]
+
+# KSI-INR-RPI: Past incidents are persistently reviewed for patterns or vulnerabilities
+# that were not previously apparent or identified.
+
+[[measure]]
+id = "INR-RPI-01"
+ksi = "KSI-INR-RPI"
+objective = "Every incident is recorded in a way that lets patterns be found."
+check = "Every closed incident issue has a category, root cause, affected component, and detection source."
+metric = "Closed incidents missing any of the four fields."
+source = "github"
+cycle = "per-change"
+automated = true
+evidence_type = "Audit Record"
+controls = ["ir-5", "ir-5.1"]
+decisions = [
+    "Patterns are found from four fields: category, root cause, affected component, and detection source",
+    "An incident can't be closed without them",
+]
+
+[[measure]]
+id = "INR-RPI-02"
+ksi = "KSI-INR-RPI"
+objective = "Recurring causes are spotted and acted on."
+check = "A monthly report groups the last 12 months of incidents by the INR-RPI-01 fields, flags any value seen 2 or more times, and every flag has a linked issue."
+metric = "Flags in the last report; flags without a linked issue."
+source = "github"
+cycle = "monthly"
+automated = true
+evidence_type = "Report"
+controls = ["ir-4.4", "ir-5.1"]
+decisions = [
+    "The report runs monthly over a rolling 12 months",
+    "A value seen 2 or more times counts as a pattern",
+]
+
+[[measure]]
+id = "INR-RPI-03"
+ksi = "KSI-INR-RPI"
+objective = "Each incident's indicators are checked against history for earlier, unnoticed activity."
+check = "When an incident closes, the SIEM searches the retained log history for its indicators of compromise, and the result is linked on the incident issue."
+metric = "Closed incidents with a linked history search; earlier activity found."
+source = "siem"
+cycle = "per-change"
+automated = true
+evidence_type = "Log"
+controls = ["ra-5.8", "ir-4.4"]
+decisions = [
+    "The history search runs in the SIEM when an incident closes",
+    "It covers all retained logs",
+]
+
+[[measure]]
+id = "INR-RPI-04"
+ksi = "KSI-INR-RPI"
+objective = "Patterns that automation can't see are looked for by a person."
+check = "Each quarter, the security lead reviews the INR-RPI-02 reports and INR-RPI-03 results with recent vulnerabilities, and records decisions."
+metric = "Days since the last review; decisions still open."
+source = "attestation"
+cycle = "quarterly"
+automated = false
+manual_reason = "Connecting incidents to each other and to vulnerabilities needs human judgment. Automation supplies the inputs (INR-RPI-02 and INR-RPI-03)."
+evidence_type = "Procedure"
+controls = ["ir-4", "ir-8"]
+decisions = [
+    "The security lead reviews past incidents quarterly",
+    "Recent vulnerabilities are reviewed alongside incident patterns",
+]
