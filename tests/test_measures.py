@@ -43,7 +43,8 @@ def measures(catalog):
 
 
 @pytest.mark.parametrize(
-    ("theme", "total", "manual"), [("CED", 5, 1), ("CMT", 10, 1), ("MLA", 14, 3)]
+    ("theme", "total", "manual"),
+    [("CED", 5, 1), ("CMT", 10, 1), ("INR", 11, 2), ("MLA", 14, 3)],
 )
 def test_measure_counts(measures, theme, total, manual):
     ours = [m for m in measures if m.ksi.startswith(f"KSI-{theme}-")]
@@ -63,6 +64,7 @@ def test_themes_with_measures_meet_the_target_class(catalog, measures):
     [
         ("CED", {"b": (1, 1), "c": (1, 1), "d": (1, 1)}),
         ("CMT", {"b": (4, 4), "c": (4, 4), "d": (0, 4)}),
+        ("INR", {"b": (3, 3), "c": (3, 3), "d": (0, 3)}),
         ("MLA", {"b": (5, 5), "c": (5, 5), "d": (0, 5)}),
     ],
 )
@@ -114,6 +116,11 @@ def test_decisions_report(catalog, write):
 def test_every_measure_states_its_decisions(measures):
     assert all(m.decisions for m in measures)
     assert "none beyond the KSI" in decisions_report(measures)
+
+
+def test_incident_reporting_implements_the_iec_rules(measures):
+    (m,) = [m for m in measures if m.id == "INR-RIR-02"]
+    assert m.rules == ("IEC-CSO-EFR", "IEC-CSO-IIR", "IEC-CSO-OIR", "IEC-CSO-FIR")
 
 
 def test_unknown_option_prints_usage(capsys):
