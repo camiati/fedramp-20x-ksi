@@ -1,0 +1,75 @@
+# Measures for KSI-CED (Cybersecurity Education).
+#
+# Theoretical cloud service: AWS infrastructure deployed by Terraform from a GitHub
+# repository, with training assigned and tracked in a training platform that has a
+# read-only reporting API (src/fedramp_ksi/training.py). Who needs each course comes from
+# the identity provider's groups and from GitHub repository access.
+# Target: Class C, which needs at least 2 automated measures per KSI (FRC-CSX-VVK).
+# Field reference: measures/README.md.
+
+# KSI-CED-RAT: The effectiveness of relevant cybersecurity education and training is
+# persistently reviewed, including at least general training for all employees,
+# role-specific training for employees in high risk roles, training for development and
+# engineering staff on secure software delivery, and training for staff involved with
+# incident response or disaster recovery.
+
+[[measure]]
+id = "CED-RAT-01"
+ksi = "KSI-CED-RAT"
+objective = "Everyone who works on the service has current general security awareness training."
+check = "Every active workforce account in the identity provider has completed the security awareness course, including insider threat and social engineering, in the last 365 days, or within 30 days of starting."
+metric = "Share of active workforce accounts with current awareness training; number overdue."
+source = "training-platform"
+cycle = "daily"
+automated = true
+evidence_type = "Report"
+controls = ["at-2", "at-2.2", "at-2.3", "at-4"]
+
+[[measure]]
+id = "CED-RAT-02"
+ksi = "KSI-CED-RAT"
+objective = "People in high risk roles have current training for those roles."
+check = "Every member of a production administrator group in the identity provider has completed the role-based course for administrators in the last 365 days."
+metric = "Share of production administrators with current role-based training; number overdue."
+source = "training-platform"
+cycle = "daily"
+automated = true
+evidence_type = "Report"
+controls = ["at-3", "at-4"]
+
+[[measure]]
+id = "CED-RAT-03"
+ksi = "KSI-CED-RAT"
+objective = "Everyone who can change the service's code is trained in secure software delivery."
+check = "Every account with write access to the service's GitHub repositories has completed the secure development course in the last 365 days."
+metric = "Share of accounts with write access and current secure development training; number overdue."
+source = "training-platform"
+cycle = "daily"
+automated = true
+evidence_type = "Report"
+controls = ["at-3", "at-4"]
+
+[[measure]]
+id = "CED-RAT-04"
+ksi = "KSI-CED-RAT"
+objective = "Incident response and recovery staff are trained for their roles, including breaches and spills."
+check = "Every member of the incident response and disaster recovery groups in the identity provider has completed the incident response and recovery course, covering breach and information spillage response, in the last 365 days."
+metric = "Share of incident response and recovery staff with current training; number overdue."
+source = "training-platform"
+cycle = "daily"
+automated = true
+evidence_type = "Report"
+controls = ["ir-2", "ir-2.3", "ir-9.2", "cp-3", "at-4"]
+
+[[measure]]
+id = "CED-RAT-05"
+ksi = "KSI-CED-RAT"
+objective = "Training is reviewed for effectiveness and improved, not just completed."
+check = "Each quarter, the security lead reviews completion rates from CED-RAT-01 to 04, phishing simulation results, and incidents caused by human error, and records the changes made to training."
+metric = "Quarterly reviews completed on time; training changes made per review."
+source = "attestation"
+cycle = "quarterly"
+automated = false
+manual_reason = "Judging whether training works takes a person; the inputs come from the automated measures and the training platform's reports."
+evidence_type = "Report"
+controls = ["at-2", "at-3", "ir-2", "cp-3"]

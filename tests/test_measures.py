@@ -39,7 +39,9 @@ def measures(catalog):
     return load_measures(catalog)
 
 
-@pytest.mark.parametrize(("theme", "total", "manual"), [("CMT", 10, 1), ("MLA", 14, 3)])
+@pytest.mark.parametrize(
+    ("theme", "total", "manual"), [("CED", 5, 1), ("CMT", 10, 1), ("MLA", 14, 3)]
+)
 def test_measure_counts(measures, theme, total, manual):
     ours = [m for m in measures if m.ksi.startswith(f"KSI-{theme}-")]
     assert len(ours) == total
@@ -56,6 +58,7 @@ def test_themes_with_measures_meet_the_target_class(catalog, measures):
 @pytest.mark.parametrize(
     ("theme", "expected"),
     [
+        ("CED", {"b": (1, 1), "c": (1, 1), "d": (1, 1)}),
         ("CMT", {"b": (4, 4), "c": (4, 4), "d": (0, 4)}),
         ("MLA", {"b": (5, 5), "c": (5, 5), "d": (0, 5)}),
     ],
@@ -70,9 +73,9 @@ def test_readiness_by_class(catalog, measures, theme, expected):
 
 
 def test_themes_without_measures_are_not_ready(catalog, measures):
-    ced = [r for r in readiness(catalog, measures) if r.theme == "CED"]
-    assert {r.service_class for r in ced} == set(AUTOMATED_MINIMUM)
-    assert all(r.ready == 0 and r.short == ("KSI-CED-RAT",) for r in ced)
+    scr = [r for r in readiness(catalog, measures) if r.theme == "SCR"]
+    assert {r.service_class for r in scr} == set(AUTOMATED_MINIMUM)
+    assert all(r.ready == 0 and r.short == ("KSI-SCR-MIT", "KSI-SCR-MON") for r in scr)
 
 
 def test_manual_measures_do_not_count(catalog, write):
