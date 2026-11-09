@@ -41,9 +41,9 @@ def catalog():
 
 
 def test_pinned_version(catalog):
-    assert catalog.version == "2026.10.13.01"
-    assert catalog.last_updated == "2026-10-13"
-    assert catalog.source_commit == "a89d78477ddea98dc57eca24f5007794c2b4eeb6"
+    assert catalog.version == "2026.11.02.01"
+    assert catalog.last_updated == "2026-11-02"
+    assert catalog.source_commit == "64fa769510416fa75fd00a4689466094265b8083"
 
 
 def test_ten_themes_all_stable(catalog):
