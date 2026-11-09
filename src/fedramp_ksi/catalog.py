@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -71,6 +72,8 @@ class Catalog:
     themes: tuple[Theme, ...]
     # Every FedRAMP rule ID, such as FRC-CSX-VVK, at JSON path FRR.<family>.data.<type>.<subset>.
     rule_ids: frozenset[str]
+    # The KSIs Class A requires, in the order FRC-CLA-MFR lists them.
+    class_a_indicators: tuple[str, ...]
 
     @property
     def indicators(self) -> tuple[Indicator, ...]:
@@ -107,6 +110,13 @@ def load_catalog(data_dir: Path = DATA_DIR) -> Catalog:
             for subsets in family["data"].values()
             for subset in subsets.values()
             for rule_id in subset
+        ),
+        class_a_indicators=tuple(
+            match.group(0)
+            for item in rules["FRR"]["FRC"]["data"]["all"]["CLA"]["FRC-CLA-MFR"][
+                "following_information"
+            ]
+            if (match := re.search(r"\bKSI-[A-Z]{3}-[A-Z]{3}\b", item))
         ),
     )
 

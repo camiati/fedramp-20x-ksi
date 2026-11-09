@@ -88,6 +88,18 @@ def test_rule_ids(catalog):
     assert not any(r.startswith("KSI-") for r in catalog.rule_ids)
 
 
+def test_class_a_indicators(catalog):
+    assert catalog.class_a_indicators == (
+        "KSI-CMT-LMC",
+        "KSI-CNA-RNT",
+        "KSI-CED-RAT",
+        "KSI-IAM-AAM",
+        "KSI-IAM-APM",
+        "KSI-INR-RIR",
+        "KSI-SVC-SIN",
+    )
+
+
 def test_five_default_artifacts(catalog):
     assert len(catalog.default_artifacts) == 5
 

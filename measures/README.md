@@ -1,6 +1,6 @@
 # Measures
 
-A **measure** is one specific, checkable thing that demonstrates a Key Security Indicator. There's one TOML file per KSI theme, such as `CMT.toml` for Change Management.
+A **measure** is one specific, checkable thing that demonstrates a Key Security Indicator. There's one TOML file per KSI theme, such as `CMT.toml` for Change Management (CMT).
 
 Every measure describes a theoretical cloud service: AWS infrastructure deployed by Terraform from GitHub, the same setup as [aws-federal-baseline](https://github.com/camiati/aws-federal-baseline). None of it describes a real system.
 
