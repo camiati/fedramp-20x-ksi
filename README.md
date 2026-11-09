@@ -209,7 +209,7 @@ For the full rules, see [FedRAMP/rules](https://github.com/FedRAMP/rules).
 
 ## The catalog
 
-Pinned to FedRAMP/rules commit [`a89d784`](https://github.com/FedRAMP/rules/commit/a89d78477ddea98dc57eca24f5007794c2b4eeb6), dataset version `2026.10.13.01`.
+Pinned to FedRAMP/rules commit [`64fa769`](https://github.com/FedRAMP/rules/commit/64fa769510416fa75fd00a4689466094265b8083), dataset version `2026.11.02.01`.
 
 | Theme | Indicators |
 |---|---|
@@ -301,7 +301,7 @@ Separately, every Monday the **Upstream check** workflow hashes the pinned files
 
 ## Known gaps
 
-- **Class A's process rules aren't modeled yet.** Of the 16 rules besides KSIs in FRC&#8209;CLA&#8209;MFR, only IEC&#8209;CSO&#8209;EFR and IEC&#8209;CSO&#8209;FIR are covered by a measure. Some, such as the existing SOC 2 Type II, FedRAMP Rev5, or GovRAMP certification and a FedRAMP Recognized assessor, need a real provider.
+- **Class A's process rules aren't modeled yet.** Of the 17 rules besides KSIs in FRC&#8209;CLA&#8209;MFR, only IEC&#8209;CSO&#8209;EFR and IEC&#8209;CSO&#8209;FIR are covered by a measure. Some, such as the existing SOC 2 Type II, FedRAMP Rev5, or GovRAMP certification and a FedRAMP Recognized assessor, need a real provider.
 - **Upstream updates are applied by hand, on purpose.** The weekly check finds changes; copying new files and updating the test expectations is a reviewed pull request.
 - **Measures cover 7 of 10 themes.** Cloud Native Architecture (CNA), Cybersecurity Education (CED), Change Management (CMT), Identity and Access Management (IAM), Incident Response (INR), Monitoring, Logging, and Auditing (MLA), and Service Configuration (SVC) meet the Class C target; the other 11 KSIs have no measures yet.
 - **Per-measure decisions are only consolidated by running a command.** The README lists the service-wide decisions, but a reader on GitHub has to open each TOML file, or run `--decisions`, to see the rest. A generated page checked by tests would fix that.
