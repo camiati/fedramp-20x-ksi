@@ -2,7 +2,9 @@
 
 FedRAMP 20x Key Security Indicators (KSIs) as code, with automated evidence.
 
-Companion to [The Grid](https://github.com/camiati/The-Grid), a reference guide to the frameworks, and [aws-federal-baseline](https://github.com/camiati/aws-federal-baseline), a Terraform baseline mapped to NIST SP 800-53. Everything here is a theoretical reference: there is no real system, tenant, or account behind it.
+Companion to [The Grid](https://github.com/camiati/The-Grid), a reference guide to the frameworks, and [aws-federal-baseline](https://github.com/camiati/aws-federal-baseline), a Terraform baseline mapped to NIST SP 800-53. 
+
+Everything here is a theoretical reference: there is no real system, tenant, or account behind it.
 
 ## What's here
 
