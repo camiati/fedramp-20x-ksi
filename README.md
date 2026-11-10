@@ -2,7 +2,7 @@
 
 FedRAMP 20x Key Security Indicators (KSIs) as code, with automated evidence.
 
-Companion to [The Grid](https://github.com/camiati/The-Grid), a reference guide to the frameworks, and [aws-federal-baseline](https://github.com/camiati/aws-federal-baseline), a Terraform baseline mapped to NIST SP 800-53. 
+Companion to [The Grid](https://github.com/camiati/The-Grid), a reference guide to the frameworks, and [fedramp-20x-terraform-baseline](https://github.com/camiati/fedramp-20x-terraform-baseline), a Terraform baseline mapped to NIST SP 800-53. 
 
 Everything here is a theoretical reference: there is no real system, tenant, or account behind it.
 
@@ -264,7 +264,7 @@ FedRAMP sets the KSI statements, the rules a measure implements, the 800-53 cont
 
 Decisions that apply to every theme:
 
-- **Infrastructure** is AWS, deployed by Terraform from GitHub, the same setup as aws-federal-baseline.
+- **Infrastructure** is AWS, deployed by Terraform from GitHub, the same setup as fedramp-20x-terraform-baseline.
 - **Workloads** run as containers on Amazon ECS with Fargate in private subnets. The only public entry points are load balancers behind AWS WAF.
 - **Changes** go through GitHub pull requests with required checks.
 - **Logs** are centralized in a dedicated log archive account and a SIEM.
@@ -315,7 +315,7 @@ Separately, every Monday the **Upstream check** workflow hashes the pinned files
 1. Measures for the other 3 themes, to Class C: Policy and Inventory (PIY), Recovery Planning (RPL), and Supply Chain Risk (SCR)
 2. A generated page of every measure's requirements and decisions, kept current by tests
 3. Machine-readable evidence per KSI as a Security Decision Record that validates against FedRAMP's SDR schema
-4. Coverage rollup from aws-federal-baseline's 800-53 annotations
+4. Coverage rollup from fedramp-20x-terraform-baseline's 800-53 annotations
 5. Compliance platform client built against recorded responses and a local mock server
 
 ## License
