@@ -1,8 +1,9 @@
 # Measures for KSI-CMT (Change Management).
 #
 # Theoretical cloud service: AWS infrastructure deployed by Terraform from a GitHub
-# repository, the same setup as aws-federal-baseline. Target: Class C, which needs at
-# least 2 automated measures per KSI (FRC-CSX-VVK). Field reference: measures/README.md.
+# repository, the same setup as fedramp-20x-terraform-baseline. Target: Class C, which
+# needs at least 2 automated measures per KSI (FRC-CSX-VVK). Field reference:
+# measures/README.md.
 
 # KSI-CMT-LMC: Modifications to the cloud service offering are logged and monitored.
 
